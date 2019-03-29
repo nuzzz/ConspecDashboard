@@ -58,6 +58,25 @@ public class Main {
     return "index";
   }
   
+  @RequestMapping("/dashboard")
+  String dashboard(Map<String, Object> model){
+
+  	
+    //for project in projects, get the list of project names and create buttons for each
+
+    //Get project list
+    //ArrayList<String> projectList = getProjectList
+
+    //for each project in project list, add a button
+
+    String project1 = "Setia project 1";
+    String project2 = "Subang project 39";
+    model.put("button1", project1);
+    model.put("button2", project2);
+
+    return "dashboard";
+  }
+  
   @RequestMapping("/hello")
   String hello(Map<String, Object> model) {
     RelativisticModel.select();
