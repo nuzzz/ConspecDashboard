@@ -2,6 +2,15 @@
 <html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::body},'dashboard')}">
 <body>
   <div class="container">
+    <form class="form-horizontal">
+        <div class="form-group">
+            <div class="col-sm-offset-2 col-sm-10">
+                <label class="file-upload btn btn-primary">
+                    Browse for file ... <input type="file" />
+                </label>
+            </div>
+        </div>
+    </form>
   
     <div class="button"><p th:text="${button1}"/></div>
     <div class="button"><p th:text="${button2}"/></div>
