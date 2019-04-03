@@ -17,15 +17,19 @@
 package com.example;
 
 import java.util.Properties;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.lang.Thread;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static javax.measure.unit.SI.KILOGRAM;
 import javax.measure.quantity.Mass;
 import org.jscience.physics.model.RelativisticModel;
 import org.jscience.physics.amount.Amount;
 
+import com.google.common.io.Files;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +46,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 @Controller
@@ -73,8 +79,10 @@ public class Main {
     } catch (IOException ioe){
     	System.out.println("Unable to read file: " + ioe);
     }
-
-    System.out.println("Filename: " + props.getProperty("OVERVIEW_ICS"));
+    String message = "Root File current location: " + new File(".").getAbsolutePath();
+    
+    //Where does this file go?
+    List<String> lines = Arrays.asList("The first line", "The second line");
   	
     //for project in projects, get the list of project names and create buttons for each
 
@@ -87,6 +95,7 @@ public class Main {
     String project2 = "Subang project 39";
     model.put("button1", project1);
     model.put("button2", project2);
+    model.put("globalmessage", message);
 
     return "dashboard";
   }
