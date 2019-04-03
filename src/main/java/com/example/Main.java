@@ -71,19 +71,26 @@ public class Main {
   
   @RequestMapping("/dashboard")
   String dashboard(Map<String, Object> model){
-    String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
-    String configPath = rootPath + "config.properties";
-    Properties props = new Properties();
-    try{
-    	props.load(new FileInputStream(configPath));
-    } catch (IOException ioe){
-    	System.out.println("Unable to read file: " + ioe);
-    }
-    String message = "Root File current location: " + new File(".").getAbsolutePath();
-    
-    //Where does this file go?
-    List<String> lines = Arrays.asList("The first line", "The second line");
-  	
+//    String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
+//    String configPath = rootPath + "config.properties";
+//    Properties props = new Properties();
+//    try{
+//    	props.load(new FileInputStream(configPath));
+//    } catch (IOException ioe){
+//    	System.out.println("Unable to read file: " + ioe);
+//    }
+    //String message = "Root File current location: " + new File(".").getAbsolutePath();
+    String message = "";
+    //Create a new file
+    String fn = "test.ics"; 
+    File f = new File(fn);
+    try {
+		Files.write("abcd".getBytes(), f);
+		message = "File sucessfully written";
+	} catch (IOException e) {
+		message = "Failed to write into file: "+ fn + "\nERROR: " + e;
+	}
+    //Open file
     //for project in projects, get the list of project names and create buttons for each
 
     //Get project list
