@@ -16,6 +16,11 @@
 
 package com.example;
 
+import java.util.Properties;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.lang.Thread;
+
 import static javax.measure.unit.SI.KILOGRAM;
 import javax.measure.quantity.Mass;
 import org.jscience.physics.model.RelativisticModel;
@@ -60,7 +65,16 @@ public class Main {
   
   @RequestMapping("/dashboard")
   String dashboard(Map<String, Object> model){
+    String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
+    String configPath = rootPath + "config.properties";
+    Properties props = new Properties();
+    try{
+    	props.load(new FileInputStream(configPath));
+    } catch (IOException ioe){
+    	System.out.println("Unable to read file: " + ioe);
+    }
 
+    System.out.println("Filename: " + props.getProperty("OVERVIEW_ICS"));
   	
     //for project in projects, get the list of project names and create buttons for each
 
