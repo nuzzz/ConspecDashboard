@@ -1,14 +1,10 @@
 package com.example;
-
-
-import static org.junit.Assert.assertEquals;
-
 import java.util.HashMap;
 
-import org.junit.Test;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+	
 	
 @DisplayName("ColourGiver class tester")
 public class ColourGiverTest {
@@ -16,7 +12,7 @@ public class ColourGiverTest {
 	@Test	
 	public void initColourIndexZero(){
 		ColourGiver colourGiver = new ColourGiver();
-		assertEquals(0, colourGiver.getColourIndex());
+		Assertions.assertEquals(0, colourGiver.getColourIndex());
 	}
 	
 	@Test	
@@ -60,7 +56,7 @@ public class ColourGiverTest {
 		ColourGiver colourGiver = new ColourGiver();
 		String expectedCategory = "Purple category";
 		String actualCategory = colourGiver.getColourCategory("abcd");
-		assertEquals(expectedCategory, actualCategory);
+		Assertions.assertEquals(expectedCategory, actualCategory);
 	}
 	
 	@Test
@@ -70,7 +66,7 @@ public class ColourGiverTest {
 		
 		String colour1 = colourGiver.getColourCategory("abcd");
 		String colour2 = colourGiver.getColourCategory("bcde");	
-		assertEquals(expectedCategory, colour2);
+		Assertions.assertEquals(expectedCategory, colour2);
 	}
 	
 	@Test
@@ -84,7 +80,7 @@ public class ColourGiverTest {
 		System.out.println(colour1);
 		System.out.println(colour2);
 		System.out.println(colour3);
-		assertEquals(expectedCategory, colour3);
+		Assertions.assertEquals(expectedCategory, colour3);
 	}
 	
 	@Test
@@ -104,14 +100,14 @@ public class ColourGiverTest {
 		String colour8 = colourGiver.getColourCategory("888");
 		String colour9 = colourGiver.getColourCategory("999");
 		
-		assertEquals(expectedArray[0], colour1);
-		assertEquals(expectedArray[1], colour2);
-		assertEquals(expectedArray[2], colour3);
-		assertEquals(expectedArray[3], colour4);
-		assertEquals(expectedArray[4], colour5);
-		assertEquals(expectedArray[5], colour6);
-		assertEquals(expectedArray[0], colour7);
-		assertEquals(expectedArray[1], colour8);
-		assertEquals(expectedArray[2], colour9);
+		Assertions.assertEquals(expectedArray[0], colour1);
+		Assertions.assertEquals(expectedArray[1], colour2);
+		Assertions.assertEquals(expectedArray[2], colour3);
+		Assertions.assertEquals(expectedArray[3], colour4);
+		Assertions.assertEquals(expectedArray[4], colour5);
+		Assertions.assertEquals(expectedArray[5], colour6);
+		Assertions.assertEquals(expectedArray[0], colour7);
+		Assertions.assertEquals(expectedArray[1], colour8);
+		Assertions.assertEquals(expectedArray[2], colour9);
 	}
 }
