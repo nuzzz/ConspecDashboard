@@ -32,6 +32,14 @@ import org.jscience.physics.amount.Amount;
 import com.google.common.io.Files;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+
+import biweekly.Biweekly;
+import biweekly.ICalendar;
+import net.sf.mpxj.MPXJException;
+import net.sf.mpxj.ProjectFile;
+import net.sf.mpxj.reader.ProjectReader;
+import net.sf.mpxj.reader.UniversalProjectReader;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
@@ -69,27 +77,71 @@ public class Main {
     return "index";
   }
   
+  @RequestMapping("/dashboard2/")
+  String dashboard2(Map<String, Object> model){
+	  //hardcode the mpp file so when this page loads it does processing.
+	  String PROJECT_FILENAME = "Project Schedule 03-03-19.mpp";
+	  
+	  ConspecProjectManager conspecPM;
+	  try{
+	   	conspecPM = new ConspecProjectManager(PROJECT_FILENAME);
+	   	ProjectFile project = conspecPM.getProjectFile();
+	   	
+	   	//ArrayList<ICalendar> calendars = extractDataAndCreateCalendars(project);
+	   	
+	   	
+	  }catch (MPXJException e){
+	   	System.out.println("Main|Failed to read project: "+ e);
+	  }
+	  
+	  return "dashboard2";
+  }
+  
   @RequestMapping("/dashboard")
   String dashboard(Map<String, Object> model){
-//    String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
-//    String configPath = rootPath + "config.properties";
-//    Properties props = new Properties();
-//    try{
-//    	props.load(new FileInputStream(configPath));
-//    } catch (IOException ioe){
-//    	System.out.println("Unable to read file: " + ioe);
-//    }
-    //String message = "Root File current location: " + new File(".").getAbsolutePath();
-    String message = "";
-    //Create a new file
-    String fn = "test.ics"; 
-    File f = new File(fn);
-    try {
-		Files.write("abcd".getBytes(), f);
-		message = "File sucessfully written";
-	} catch (IOException e) {
-		message = "Failed to write into file: "+ fn + "\nERROR: " + e;
+	  
+	String PROJECT_FILENAME = "Project Schedule 03-03-19.mpp";
+	
+	String message = "";
+    String configPath = "config.properties";
+    Properties projProperties = new Properties();
+    try{
+    	projProperties.load(new FileInputStream(configPath));
+    } catch (IOException ioe){
+    	message = "Unable to read file: " + ioe;
+    	System.out.println("Main|Unable to read file: " + ioe);
+    }
+    
+    try{
+    	ConspecProjectManager conspecPM;
+    	conspecPM = new ConspecProjectManager(PROJECT_FILENAME);
+    	ProjectFile project = conspecPM.getProjectFile();
+    	ArrayList<ICalendar> calendars = conspecPM.createProjectCalendars(project, "ICS");
+    	
+    	ICalendar overviewCal = calendars.get(0);
+    	File overview_file = new File(projProperties.getProperty("OVERVIEW_ICS"));
+    	Biweekly.write(overviewCal).go(overview_file);
+    	message = "Succesfully written to overviewfile";
+    }catch (MPXJException e){
+    	message = "Main|Failed to read project: "+ e;
+    	System.out.println("Main|Failed to read project: "+ e);
+    }catch (IOException e1) {
+    	message = "Unable to write to file: " + e1;
+		System.out.println("Unable to write to file: " + e1 );
 	}
+    
+    
+    //Create a button that when pushed
+    // 1. uploads mpp file to server.
+    // 2. Open mpp file and load into memory
+    // 3. create 3 calendar files, overview, reminder3 and mondaysummary
+    // 4. Upload created calendar files to server
+    // 5. for each calendar create a clickable downloadable link
+    
+    //Provide a tutorial of how to upload ics/csv files to outlook/google calendar (image files hosted on database)
+    
+    //
+    
     //Open file
     //for project in projects, get the list of project names and create buttons for each
 
@@ -97,11 +149,7 @@ public class Main {
     //ArrayList<String> projectList = getProjectList
 
     //for each project in project list, add a button
-
-    String project1 = "Setia project 1";
-    String project2 = "Subang project 39";
-    model.put("button1", project1);
-    model.put("button2", project2);
+    model.put("loadButton", "Do something");
     model.put("globalmessage", message);
 
     return "dashboard";
