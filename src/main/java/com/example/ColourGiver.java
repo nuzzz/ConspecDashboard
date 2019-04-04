@@ -12,6 +12,7 @@ public class ColourGiver {
 	
 	public ColourGiver(){
 		resetColourIndex();
+		//This is taken from outlook calendar category defaults
 		this.colourArray = new String[]{"Purple category", "Blue category", 
 										"Green category", "Yellow category", 
 										"Orange category", "Red category"};
@@ -23,6 +24,18 @@ public class ColourGiver {
 		if(this.colourIndex+1 > this.colourArray.length){
 			resetColourIndex();
 		}	
+	}
+	
+	public int getColourIndex(){
+		return this.colourIndex;
+	}
+	
+	public String[] getColourArray(){
+		return this.colourArray;
+	}
+	
+	public HashMap<String, String> getColourMap(){
+		return this.getColourMap();
 	}
 	
 	private void resetColourIndex(){
