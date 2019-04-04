@@ -10,6 +10,16 @@ public class ColourGiver {
 	private String[] colourArray;
 	private Map<String, String> colourMap;
 	
+	public ColourGiver(String[] colourArray) throws Exception{
+		if (colourArray.length==0){
+			throw new Exception("Error: colour array cannot be empty");
+		}
+		resetColourIndex();
+		//This is taken from outlook calendar category defaults
+		this.colourArray = colourArray;
+		this.colourMap = new HashMap<String, String>();
+	}
+	
 	public ColourGiver(){
 		resetColourIndex();
 		//This is taken from outlook calendar category defaults
@@ -35,16 +45,11 @@ public class ColourGiver {
 	}
 	
 	public HashMap<String, String> getColourMap(){
-		return this.getColourMap();
+		return (HashMap<String, String>) this.colourMap;
 	}
 	
 	private void resetColourIndex(){
 		this.colourIndex = 0;
-	}
-	
-	private String getNextColour(){
-		colourIndexPlusOne();
-		return this.colourArray[this.colourIndex];
 	}
 	
 	private String getColour(){
@@ -53,29 +58,15 @@ public class ColourGiver {
 
 	public String getColourCategory(String category){
 		String colour = "";
-		if(this.colourMap.containsKey(category)){
-			//get the category colour for the value
-			colour = colourMap.entrySet().stream()
-					  .filter(e -> e.getValue().equals(category))
-					  .map(Map.Entry::getKey)
-					  .findFirst()
-					  .orElse(null);
-			
+		//if colour not in mapping, add it to mapping.
+		if(!this.colourMap.containsKey(category)){
+			colour = getColour();
+			this.colourMap.put(category,colour);
+			colourIndexPlusOne();
+		//if colour in mapping retrieve it from map
 		}else{
-			addCategory(category);
-			colour = this.colourMap.get(category);
+			colour = colourMap.get(category);
 		}
 		return colour;
-	}
-
-	private void addCategory(String category){
-		//if colourMap does not contain category, add it
-		if(this.colourMap.get(category) == null){
-			this.colourMap.put(category,getColour());
-		}else{
-			this.colourMap.put(category,getNextColour());
-		}
-	}
-	
-	
+	}	
 }

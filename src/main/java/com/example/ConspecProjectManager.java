@@ -17,6 +17,10 @@ import net.sf.mpxj.reader.UniversalProjectReader;
 public class ConspecProjectManager {
 	private String projectFilename;
 	private ProjectFile projectData;
+	private String[] colourArray =  {"Purple category", "Blue category", 
+								"Green category", "Yellow category", 
+								"Orange category", "Red category"};
+	
 	ConspecProjectManager(String projectFilename) throws MPXJException{
 		ProjectReader reader = new UniversalProjectReader();
 		try {
@@ -58,6 +62,7 @@ public class ConspecProjectManager {
 	
 	public ICalendar createOverviewCalendarICS(ProjectFile project){
 		ICalendar overviewCal = new ICalendar(); 
+		
 		ColourGiver colourGiver = new ColourGiver();
 		
 		System.out.println("project tasks amount: " +project.getTasks().size());

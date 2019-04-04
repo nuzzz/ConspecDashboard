@@ -121,7 +121,7 @@ public class Main {
     	ICalendar overviewCal = calendars.get(0);
     	File overview_file = new File(projProperties.getProperty("OVERVIEW_ICS"));
     	Biweekly.write(overviewCal).go(overview_file);
-    	message = "Succesfully written to overviewfile";
+    	message = "Succesfully written to overview file";
     }catch (MPXJException e){
     	message = "Main|Failed to read project: "+ e;
     	System.out.println("Main|Failed to read project: "+ e);
