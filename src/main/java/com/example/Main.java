@@ -103,6 +103,10 @@ public class Main {
 	String PROJECT_FILENAME = "Project Schedule 03-03-19.mpp";
 	
 	String message = "";
+	ArrayList<ICalendar> calendars;
+	ConspecProjectManager conspecPM = null;
+	ProjectFile project = null;
+	
     String configPath = "config.properties";
     Properties projProperties = new Properties();
     try{
@@ -113,19 +117,33 @@ public class Main {
     }
     
     try{
-    	ConspecProjectManager conspecPM;
     	conspecPM = new ConspecProjectManager(PROJECT_FILENAME);
-    	ProjectFile project = conspecPM.getProjectFile();
-    	ArrayList<ICalendar> calendars = conspecPM.createProjectCalendars(project, "ICS");
-    	
-    	ICalendar overviewCal = calendars.get(0);
-    	File overview_file = new File(projProperties.getProperty("OVERVIEW_ICS"));
-    	Biweekly.write(overviewCal).go(overview_file);
-    	message = "Succesfully written to overview file";
+    	project = conspecPM.getProjectFile();
     }catch (MPXJException e){
     	message = "Main|Failed to read project: "+ e;
     	System.out.println("Main|Failed to read project: "+ e);
-    }catch (IOException e1) {
+    }
+    
+    calendars = conspecPM.createProjectCalendars(project, "ICS");
+    
+    //Write overview.ics
+    try{
+    	ICalendar overviewCal = calendars.get(0);
+    	File overview_file = new File(projProperties.getProperty("OVERVIEW_ICS"));
+    	Biweekly.write(overviewCal).go(overview_file);
+    	message += "Succesfully written to overview file\n";
+    } catch (IOException e1) {
+    	message = "Unable to write to file: " + e1;
+		System.out.println("Unable to write to file: " + e1 );
+	}
+    
+    //Write reminder.ics
+    try{
+    	ICalendar reminderCal = calendars.get(1);
+    	File reminder_file = new File(projProperties.getProperty("REMINDER_ICS"));
+    	Biweekly.write(reminderCal).go(reminder_file);
+    	message += "Succesfully written to reminder file\n";
+    } catch (IOException e1) {
     	message = "Unable to write to file: " + e1;
 		System.out.println("Unable to write to file: " + e1 );
 	}
