@@ -131,10 +131,10 @@ public class Main {
     	ICalendar overviewCal = calendars.get(0);
     	File overview_file = new File(projProperties.getProperty("OVERVIEW_ICS"));
     	Biweekly.write(overviewCal).go(overview_file);
-    	message += "Succesfully written to overview file\n";
+    	message += "Main|Succesfully written to overview file\n";
     } catch (IOException e1) {
-    	message = "Unable to write to file: " + e1;
-		System.out.println("Unable to write to file: " + e1 );
+    	message = "Main|Unable to write to file: " + e1;
+		System.out.println("Main|Unable to write to file: " + e1 );
 	}
     
     //Write reminder.ics
@@ -142,10 +142,21 @@ public class Main {
     	ICalendar reminderCal = calendars.get(1);
     	File reminder_file = new File(projProperties.getProperty("REMINDER_ICS"));
     	Biweekly.write(reminderCal).go(reminder_file);
-    	message += "Succesfully written to reminder file\n";
+    	message += "Main|Succesfully written to reminder file\n";
     } catch (IOException e1) {
-    	message = "Unable to write to file: " + e1;
-		System.out.println("Unable to write to file: " + e1 );
+    	message = "Main|Unable to write to file: " + e1;
+		System.out.println("Main|Unable to write to file: " + e1 );
+	}
+    
+  //Write weeklySummary.ics
+    try{
+    	ICalendar weeklySummaryCal = calendars.get(2);
+    	File weeklySummary_file = new File(projProperties.getProperty("WEEKLY_SUMMARY_ICS"));
+    	Biweekly.write(weeklySummaryCal).go(weeklySummary_file);
+    	message += "Main|Succesfully written to weeklySummary file\n";
+    } catch (IOException e1) {
+    	message = "Main|Unable to write to file: " + e1;
+		System.out.println("Main|Unable to write to file: " + e1 );
 	}
     
     

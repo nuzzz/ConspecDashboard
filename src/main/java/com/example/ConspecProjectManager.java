@@ -1,17 +1,21 @@
 package com.example;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import biweekly.ICalendar;
 import biweekly.component.VEvent;
 import biweekly.property.Summary;
 import biweekly.util.Duration;
+
+
 import net.sf.mpxj.MPXJException;
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Task;
@@ -41,28 +45,16 @@ public class ConspecProjectManager {
 	public ArrayList<ICalendar> createProjectCalendars(ProjectFile project, String fileType){
 		ICalendar overviewCal = createOverviewCalendar(project, fileType);
 		ICalendar reminderCal = createReminderCalendar(project, fileType);
+		ICalendar weeklySummaryCal = createWeeklySummaryCalendar(project, fileType);
+		
 		ArrayList<ICalendar> calendars = new ArrayList<ICalendar>();
+		
 		calendars.add(overviewCal);
 		calendars.add(reminderCal);
-		//ICalendar reminder3Cal = new ICalendar();
-		//ICalendar monsummaryCal = new ICalendar();
+		calendars.add(weeklySummaryCal);
+		
 		
 		return calendars;
-	}
-	
-	public ICalendar createReminderCalendar(ProjectFile project, String fileType){
-		ICalendar reminderCal = new ICalendar();
-		switch(fileType){
-			case("ICS"):
-				reminderCal = createReminderCalendarICS(project);
-				break;
-			case("CSV"):
-				//do nothing for now
-				break;
-			default:
-				break;
-		}
-		return reminderCal;
 	}
 	
 	public ICalendar createOverviewCalendar(ProjectFile project, String fileType){
@@ -72,7 +64,7 @@ public class ConspecProjectManager {
 				overviewCal = createOverviewCalendarICS(project);
 				break;
 			case("CSV"):
-				//do nothing for now
+				//TODO: do nothing for now
 				break;	
 			default:
 				//invalid file type
@@ -81,9 +73,112 @@ public class ConspecProjectManager {
 		return overviewCal;
 	}
 	
+
+	public ICalendar createReminderCalendar(ProjectFile project, String fileType){
+		ICalendar reminderCal = new ICalendar();
+		switch(fileType){
+			case("ICS"):
+				reminderCal = createReminderCalendarICS(project);
+				break;
+			case("CSV"):
+				//TODO: do nothing for now
+				break;
+			default:
+				break;
+		}
+		return reminderCal;
+	}
+	
+	public ICalendar createWeeklySummaryCalendar(ProjectFile project, String fileType){
+		ICalendar weeklySummaryCal = new ICalendar();
+		switch(fileType){
+			case("ICS"):
+				weeklySummaryCal = createWeeklySummaryCalendarICS(project);
+				break;
+			case("CSV"):
+				//TODO: do nothing for now
+				break;
+			default:
+				break;
+		}
+		return weeklySummaryCal;
+	}
+	
+	
+	public ICalendar createWeeklySummaryCalendarICS(ProjectFile project){
+		ICalendar weeklySummaryCal = new ICalendar();
+		//ColourGiver colourGiver = new ColourGiver();
+		WeeklySummaryHelper wsh = new WeeklySummaryHelper();
+		Map<Integer,String> mondayEvents = new HashMap<Integer,String>();
+		
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+		
+		for(Task task : project.getTasks()){
+			//This task is an activity if it fulfills 3 conditions:
+			//1. If taskname does not contain milestone and
+			//2. If task has a parent task and
+			//3. If task has no children task
+			if(!task.getName().contains("Milestone") && 
+					task.getParentTask()!=null && 
+					task.getChildTasks().size()==0){
+				
+				//Create monday summary
+				wsh.setDateListOfDay(DayOfWeek.MONDAY,task.getStart(),task.getFinish());
+			
+				ArrayList<Integer> mondayList = wsh.getDayDateList();
+				
+				if(mondayList.size()==0) {
+					//do nothing 
+				}else{
+					String newEventString = "Event this week: " + task.getName() + "\n";
+					
+					//for each monday in mondaylist
+					for(Integer mondayDateInt : mondayList){
+						//if monday is in hashmap, append to the value
+						if(mondayEvents.containsKey(mondayDateInt)){
+							String appendedValue = mondayEvents.get(mondayDateInt) + newEventString;
+							mondayEvents.put(mondayDateInt, appendedValue);
+						//if monday not in hashmap, add event
+						}else{
+							mondayEvents.put(mondayDateInt, newEventString);
+						}
+					}		
+				}
+			}		
+		}
+		
+				
+		//Map<Integer,String> mondayEvents = new HashMap<Integer,String>();
+		Iterator it = mondayEvents.entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry pair = (Map.Entry)it.next();
+	        Integer mondayDateInt = (Integer) pair.getKey();
+	        String mondaySummaryDescription = (String) pair.getValue();
+	        
+	        System.out.println("Key: " + pair.getKey() +" Value: "+ pair.getValue());
+	        
+	        VEvent newEvent = new VEvent();
+	        Summary summary = newEvent.setSummary("Monday Summary: " + mondayDateInt);
+	        summary.setLanguage("en-us");
+	        Duration duration = new Duration.Builder().hours(1).build();
+	        Date startDate = wsh.convertToDateViaInstant(LocalDate.parse(mondayDateInt.toString(),formatter));
+	        
+	        newEvent.setSummary(summary);
+	        newEvent.setDateStart(startDate);
+	        newEvent.setDuration(duration);
+	        newEvent.setDescription(mondaySummaryDescription);
+	        
+	        weeklySummaryCal.addEvent(newEvent);
+	        it.remove(); // avoids a ConcurrentModificationException
+	    }
+				
+		return weeklySummaryCal;
+	}
+	
 	public ICalendar createReminderCalendarICS(ProjectFile project){
 		ICalendar reminderCal = new ICalendar();
 		ColourGiver colourGiver = new ColourGiver();
+		WeeklySummaryHelper wsh = new WeeklySummaryHelper();
 		
 		for(Task task : project.getTasks()){
 			//This task is an activity if it fulfills 3 conditions:
@@ -109,8 +204,8 @@ public class ConspecProjectManager {
 				Summary summary2 = newEvent.setSummary("In 3 days: " + task.getName());
 				summary2.setLanguage("en-us");
 				
-				LocalDate localDateMinus3 = convertToLocalDateViaInstant(task.getStart()).minusDays(3);
-				Date dateMinus3 = convertToDateViaInstant(localDateMinus3);
+				LocalDate localDateMinus3 = wsh.convertToLocalDateViaInstant(task.getStart()).minusDays(3);
+				Date dateMinus3 = wsh.convertToDateViaInstant(localDateMinus3);
 				Duration duration = new Duration.Builder().hours(1).build();
 				
 				newEvent.setDateStart(dateMinus3);
@@ -168,16 +263,5 @@ public class ConspecProjectManager {
 			}	
 		}
 		return overviewCal;
-	}
-	
-	public LocalDate convertToLocalDateViaInstant(Date dateToConvert) {
-	    return dateToConvert.toInstant()
-	      .atZone(ZoneId.systemDefault())
-	      .toLocalDate();
-	}
-	public Date convertToDateViaInstant(LocalDate dateToConvert) {
-	    return java.util.Date.from(dateToConvert.atStartOfDay()
-	      .atZone(ZoneId.systemDefault())
-	      .toInstant());
 	}
 }

@@ -25,7 +25,13 @@
 	<junit.jupiter.version>5.4.1</junit.jupiter.version>
   </properties>
 
-  <dependencies>
+  <dependencies> 
+	<dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-commons</artifactId>
+      <version>1.4.1</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
 	  <artifactId>junit-jupiter</artifactId>
