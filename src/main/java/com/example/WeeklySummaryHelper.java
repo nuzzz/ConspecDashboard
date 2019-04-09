@@ -11,7 +11,6 @@ public class WeeklySummaryHelper {
 	public WeeklySummaryHelper( ){
 		this.dayDateList = new ArrayList<Integer>();
 	}
-	
 
 	public ArrayList<Integer> getDayDateList() {
 		return dayDateList;
@@ -42,20 +41,32 @@ public class WeeklySummaryHelper {
 	public void addDayDateListInRangeIfDay(DayOfWeek dayOfWeek, LocalDate startDate, LocalDate endDate) {
 		LocalDate iteratorDate = LocalDate.of(startDate.getYear(), startDate.getMonthValue(), startDate.getDayOfMonth());
 		
-		while(iteratorDate.isBefore(endDate) || iteratorDate.isEqual(endDate)) {
+		//while(iteratorDate.isBefore(endDate) || iteratorDate.isEqual(endDate)) {
+		while(!iteratorDate.isAfter(endDate)) {
 			if(isXDay(dayOfWeek, iteratorDate)){
 				addDayDateListIfDay(dayOfWeek, iteratorDate);
 				iteratorDate = iteratorDate.plusDays(7);
 			}else{
+				Integer dayDateInteger = convertDateTo8Integer(iteratorDate.with(dayOfWeek));
+				if(dayDateInteger!=-1 && !this.dayDateList.contains(dayDateInteger)){
+					this.dayDateList.add(dayDateInteger);
+				}
 				iteratorDate = iteratorDate.plusDays(1);
 			}
 		}
 	}
 	
 	public void addDayDateListIfDay(DayOfWeek dayOfWeek, LocalDate localDate) {
+		
 		if(isXDay(dayOfWeek, localDate)){
+			//if doesnt contain the date, add it
 			Integer dayDateInteger = convertDateTo8Integer(localDate);
-			if(dayDateInteger!=-1){
+			if(dayDateInteger!=-1 && !this.dayDateList.contains(dayDateInteger)){
+				this.dayDateList.add(dayDateInteger);
+			}
+		}else{
+			Integer dayDateInteger = convertDateTo8Integer(localDate.with(dayOfWeek));
+			if(dayDateInteger!=-1 && !this.dayDateList.contains(dayDateInteger)){
 				this.dayDateList.add(dayDateInteger);
 			}
 		}
@@ -68,6 +79,7 @@ public class WeeklySummaryHelper {
 		}
 		return false;
 	}
+	
 
 	public LocalDate convertToLocalDateViaInstant(Date dateToConvert) {
 	    return dateToConvert.toInstant()

@@ -7,8 +7,10 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 
 import biweekly.ICalendar;
 import biweekly.component.VEvent;
@@ -108,34 +110,38 @@ public class ConspecProjectManager {
 	public ICalendar createWeeklySummaryCalendarICS(ProjectFile project){
 		ICalendar weeklySummaryCal = new ICalendar();
 		//ColourGiver colourGiver = new ColourGiver();
-		WeeklySummaryHelper wsh = new WeeklySummaryHelper();
 		Map<Integer,String> mondayEvents = new HashMap<Integer,String>();
 		
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-		
+		int count = 1;
 		for(Task task : project.getTasks()){
 			//This task is an activity if it fulfills 3 conditions:
 			//1. If taskname does not contain milestone and
 			//2. If task has a parent task and
 			//3. If task has no children task
+			
 			if(!task.getName().contains("Milestone") && 
 					task.getParentTask()!=null && 
 					task.getChildTasks().size()==0){
 				
 				//Create monday summary
+				WeeklySummaryHelper wsh = new WeeklySummaryHelper();
 				wsh.setDateListOfDay(DayOfWeek.MONDAY,task.getStart(),task.getFinish());
-			
+				//System.out.println(task.getName() + " start " +  task.getStart() + " fin "+ task.getFinish());
 				ArrayList<Integer> mondayList = wsh.getDayDateList();
 				
+				//Set<Integer> set = new HashSet<Integer>(mondayList);
+				
+				//System.out.println(task.getName() + " List: " +mondayList);
 				if(mondayList.size()==0) {
 					//do nothing 
 				}else{
-					String newEventString = "Event this week: " + task.getName() + "\n";
+					String newEventString = "Task " + count + ": " + task.getName() + "\n ";
 					
 					//for each monday in mondaylist
 					for(Integer mondayDateInt : mondayList){
 						//if monday is in hashmap, append to the value
-						if(mondayEvents.containsKey(mondayDateInt)){
+						if(mondayEvents.containsKey(mondayDateInt)){	
 							String appendedValue = mondayEvents.get(mondayDateInt) + newEventString;
 							mondayEvents.put(mondayDateInt, appendedValue);
 						//if monday not in hashmap, add event
@@ -144,24 +150,28 @@ public class ConspecProjectManager {
 						}
 					}		
 				}
-			}		
+				count++;
+			
+			}
 		}
+		
 		
 				
 		//Map<Integer,String> mondayEvents = new HashMap<Integer,String>();
 		Iterator it = mondayEvents.entrySet().iterator();
+		WeeklySummaryHelper wsh2 = new WeeklySummaryHelper();
 	    while (it.hasNext()) {
 	        Map.Entry pair = (Map.Entry)it.next();
 	        Integer mondayDateInt = (Integer) pair.getKey();
 	        String mondaySummaryDescription = (String) pair.getValue();
 	        
-	        System.out.println("Key: " + pair.getKey() +" Value: "+ pair.getValue());
+	        //System.out.println("Key: " + pair.getKey() +" Value: "+ pair.getValue());
 	        
 	        VEvent newEvent = new VEvent();
 	        Summary summary = newEvent.setSummary("Monday Summary: " + mondayDateInt);
 	        summary.setLanguage("en-us");
 	        Duration duration = new Duration.Builder().hours(1).build();
-	        Date startDate = wsh.convertToDateViaInstant(LocalDate.parse(mondayDateInt.toString(),formatter));
+	        Date startDate = wsh2.convertToDateViaInstant(LocalDate.parse(mondayDateInt.toString(),formatter));
 	        
 	        newEvent.setSummary(summary);
 	        newEvent.setDateStart(startDate);
