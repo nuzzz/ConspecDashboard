@@ -136,7 +136,7 @@ public class ConspecProjectManager {
 				if(mondayList.size()==0) {
 					//do nothing 
 				}else{
-					String newEventString = "Task " + count + ": " + task.getName() + "\n ";
+					String newEventString = "Task " + count + " [" + task.getParentTask().getName() + "]: " + task.getName() + "\n";
 					
 					//for each monday in mondaylist
 					for(Integer mondayDateInt : mondayList){

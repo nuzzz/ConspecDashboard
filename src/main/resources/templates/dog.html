@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::body},'hello')}">
+<head>
+<meta charset="ISO-8859-1">
+<title>Insert title here</title>
+</head>
+<body>
+  <div class="container">
+    <p th:text="${message2}"/>
+    <div>
+    	<img th:src="${message3}">
+        
+    </div>
+  </div>
+
+</body>
+</html>
