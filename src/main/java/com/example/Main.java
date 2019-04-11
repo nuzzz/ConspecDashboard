@@ -115,20 +115,9 @@ public class Main {
 		//convert json string to object
 		Dog doggo;
 		try {
-			//doggo = objectMapper.readValue(jsonData, Dog.class);
 			JsonNode rootNode = objectMapper.readTree(jsonData);
 	        JsonNode urlNode = rootNode.get(0).get("url");
 	        String url = urlNode.asText();
-	        
-	        
-	        //String url = urlNode.get("url").asText();
-	        //JsonNode location = firstResult.get("locations").get(0);
-//	        JsonNode latLng = location.get("latLng");
-//	        String lat = latLng.get("lat").asText();
-//	        String lng = latLng.get("lng").asText();
-//	        output = lat + "," + lng;
-//	        System.out.println("Found Coordinates: " + output);
-			
 			
 			//System.out.println("Dog Object\n"+ doggo);
 			model.put("message3", url);
@@ -144,6 +133,7 @@ public class Main {
 		}
 		
 		model.put("message2", result);
+		model.put("message4",  "Refresh for new doggo");
 		return "dog";
 	}
 
