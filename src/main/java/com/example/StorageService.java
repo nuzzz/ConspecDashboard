@@ -1,39 +1,23 @@
 package com.example;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.Path;
+import java.util.stream.Stream;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 
-@Service
-public class StorageService {
+public interface StorageService {
 
-    @Value("${upload.path}")
-    private String path;
+    void init();
 
-    public void uploadFile(MultipartFile file) {
+    void store(MultipartFile file);
 
-        if (file.isEmpty()) {
-            throw new StorageException("Failed to store empty file");
-        }
+    Stream<Path> loadAll();
 
-        try {
-            String fileName = file.getOriginalFilename();
-            InputStream is = file.getInputStream();
+    Path load(String filename);
 
-            Files.copy(is, Paths.get(path + fileName),
-                    StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
+    Resource loadAsResource(String filename);
 
-            String msg = String.format("Failed to store file", file.getName());
+    void deleteAll();
 
-            throw new StorageException(msg, e);
-        }
-
-    }
 }
