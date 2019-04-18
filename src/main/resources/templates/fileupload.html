@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	th:replace="~{fragments/layout :: layout (~{::body},'hello')}">
+<head>
+<title>Insert title here</title>
+</head>
+<body>
+	<div class="container">
+	
+		<form class="md-form">
+			<div class="file-field big-2">
+				<div
+					class="btn btn-outline-danger btn-rounded waves-effect btn-lg float-left">
+					<span>Choose file<i class="fas fa-upload ml-3" aria-hidden="true"></i></span> 
+					<input type="file">
+				</div>
+				<div class="file-path-wrapper">
+					<input class="file-path validate" type="text"
+						placeholder="Upload your file">
+				</div>
+			</div>
+		</form>
+		
+		<p th:text="${message}" />
+	</div>
+
+</body>
+</html>

@@ -57,6 +57,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -86,14 +87,6 @@ public class Main {
 	String index() {
 		return "index";
 	}
-
-	@RequestMapping("/uploadproject")
-	String domagic(Map <String, Object> model){
-		
-		
-		return "uploadproject";
-	}
-	
 	
 	// dog generator
 	@RequestMapping("/dog")
@@ -143,6 +136,17 @@ public class Main {
 		model.put("message2", result);
 		model.put("message4",  "Refresh for new doggo");
 		return "dog";
+	}
+	
+	@RequestMapping("/fileupload")
+	String conspec(Map<String,Object> model){
+		return "fileupload";
+	}
+	
+	@RequestMapping(value = "/doUpload", method = RequestMethod.POST,
+		    consumes = {"multipart/form-data"})
+	public String upload(@RequestParam MultipartFile file) {
+		return "redirect:/success.html";
 	}
 	
 	
