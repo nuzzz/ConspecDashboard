@@ -66,39 +66,39 @@ public class WebApplicationController {
         this.storageService = storageService;
     }
 	
-	@GetMapping("/")
-    public String listUploadedFiles(Model model) throws IOException {
-        model.addAttribute("files", storageService.loadAll().map(
-                path -> MvcUriComponentsBuilder.fromMethodName(WebApplicationController.class,
-                        "serveFile", path.getFileName().toString()).build().toString())
-                .collect(Collectors.toList()));
-        return "uploadForm";
-    }
-
-    @GetMapping("/upload/files/{filename:.+}")
-    @ResponseBody
-    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-
-        Resource file = storageService.loadAsResource(filename);
-        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + file.getFilename() + "\"").body(file);
-    }
-
-    @PostMapping("/")
-    public String handleFileUpload(@RequestParam("file") MultipartFile file,
-            RedirectAttributes redirectAttributes) {
-
-        storageService.store(file);
-        redirectAttributes.addFlashAttribute("message",
-                "You successfully uploaded " + file.getOriginalFilename() + "!");
-
-        return "redirect:/";
-    }
-
-    @ExceptionHandler(StorageFileNotFoundException.class)
-    public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
-        return ResponseEntity.notFound().build();
-    }
+//	@GetMapping("/")
+//    public String listUploadedFiles(Model model) throws IOException {
+//        model.addAttribute("files", storageService.loadAll().map(
+//                path -> MvcUriComponentsBuilder.fromMethodName(WebApplicationController.class,
+//                        "serveFile", path.getFileName().toString()).build().toString())
+//                .collect(Collectors.toList()));
+//        return "uploadForm";
+//    }
+//
+//    @GetMapping("/upload/files/{filename:.+}")
+//    @ResponseBody
+//    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
+//
+//        Resource file = storageService.loadAsResource(filename);
+//        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
+//                "attachment; filename=\"" + file.getFilename() + "\"").body(file);
+//    }
+//
+//    @PostMapping("/")
+//    public String handleFileUpload(@RequestParam("file") MultipartFile file,
+//            RedirectAttributes redirectAttributes) {
+//
+//        storageService.store(file);
+//        redirectAttributes.addFlashAttribute("message",
+//                "You successfully uploaded " + file.getOriginalFilename() + "!");
+//
+//        return "redirect:/";
+//    }
+//
+//    @ExceptionHandler(StorageFileNotFoundException.class)
+//    public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
+//        return ResponseEntity.notFound().build();
+//    }
 //    
 //	// file uploader app
 //	@RequestMapping("/fileupload")
@@ -106,10 +106,17 @@ public class WebApplicationController {
 //		return "fileupload";
 //	}
 
-//	@RequestMapping("/")
-//	String index() {
-//		return "index";
-//	}
+    
+    @RequestMapping("/addtask")
+    public String addTask(){
+    	return "addtask";
+    }
+    
+    
+	@RequestMapping("/")
+	String index() {
+		return "index";
+	}
 
 	// dog generator
 	@RequestMapping("/dog")
