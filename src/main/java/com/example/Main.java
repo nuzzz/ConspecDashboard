@@ -87,6 +87,14 @@ public class Main {
 		return "index";
 	}
 
+	@RequestMapping("/uploadproject")
+	String domagic(Map <String, Object> model){
+		
+		
+		return "uploadproject";
+	}
+	
+	
 	// dog generator
 	@RequestMapping("/dog")
 	String dog(Map<String, Object> model) {
@@ -136,7 +144,8 @@ public class Main {
 		model.put("message4",  "Refresh for new doggo");
 		return "dog";
 	}
-
+	
+	
 //  @RequestMapping("/dashboard2/")
 //  String dashboard2(Map<String, Object> model){
 //	  //hardcode the mpp file so when this page loads it does processing.
