@@ -71,9 +71,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
+
 @Controller
 @SpringBootApplication
 public class Main {
+	
+	@Autowired
+	private StorageService storageService;
 
 	@Value("${spring.datasource.url}")
 	private String dbUrl;
@@ -141,7 +145,7 @@ public class Main {
 	}
 	
 	@RequestMapping("/fileupload")
-	String conspec(Map<String,Object> model){
+	public String fileupload(Map<String,Object> model){
 		return "fileupload";
 	}
 	
@@ -149,28 +153,7 @@ public class Main {
 		    consumes = {"multipart/form-data"})
 	public String upload(@RequestParam MultipartFile file) {
 		return "redirect:/success.html";
-	}
-	
-	
-//  @RequestMapping("/dashboard2/")
-//  String dashboard2(Map<String, Object> model){
-//	  //hardcode the mpp file so when this page loads it does processing.
-//	  String PROJECT_FILENAME = "Project Schedule 03-03-19.mpp";
-//	  
-//	  ConspecProjectManager conspecPM;
-//	  try{
-//	   	conspecPM = new ConspecProjectManager(PROJECT_FILENAME);
-//	   	ProjectFile project = conspecPM.getProjectFile();
-//	   	
-//	   	//ArrayList<ICalendar> calendars = extractDataAndCreateCalendars(project);
-//	   	
-//	   	
-//	  }catch (MPXJException e){
-//	   	System.out.println("Main|Failed to read project: "+ e);
-//	  }
-//	  
-//	  return "dashboard2";
-//  }
+	}	
 
 	@RequestMapping("/dashboard")
 	String dashboard(Map<String, Object> model) {
