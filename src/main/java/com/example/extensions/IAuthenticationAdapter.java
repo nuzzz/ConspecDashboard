@@ -1,4 +1,4 @@
-package com.example;
+package com.example.extensions;
 
 import com.microsoft.graph.authentication.IAuthenticationProvider;
 

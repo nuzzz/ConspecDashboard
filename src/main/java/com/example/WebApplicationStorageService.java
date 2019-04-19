@@ -17,13 +17,17 @@ import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.extensions.StorageException;
+import com.example.extensions.StorageFileNotFoundException;
+import com.example.extensions.StorageService;
+
 @Service
-public class ApplicationStorageService implements StorageService {
+public class WebApplicationStorageService implements StorageService {
 
     private final Path rootLocation;
 
     @Autowired
-    public ApplicationStorageService(StorageProperties properties) {
+    public WebApplicationStorageService(StorageProperties properties) {
         this.rootLocation = Paths.get(properties.getLocation());
     }
         

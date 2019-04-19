@@ -53,7 +53,8 @@ import okhttp3.Response;
 @Controller
 public class WebApplicationController {
 
-	private final ApplicationStorageService storageService;
+	private final WebApplicationStorageService storageService;
+	private final WebApplicationTodoistService todoistService;
 
 	@Autowired
 	private DataSource dataSource;
@@ -62,10 +63,11 @@ public class WebApplicationController {
 	private String dbUrl;
 
     @Autowired
-    public WebApplicationController(ApplicationStorageService storageService) {
+    public WebApplicationController(WebApplicationStorageService storageService, WebApplicationTodoistService todoistService) {
         this.storageService = storageService;
+        this.todoistService = todoistService;
     }
-	
+    
 //	@GetMapping("/")
 //    public String listUploadedFiles(Model model) throws IOException {
 //        model.addAttribute("files", storageService.loadAll().map(
@@ -106,6 +108,10 @@ public class WebApplicationController {
 //		return "fileupload";
 //	}
 
+    @RequestMapping("/todoist")
+    public String todoist(){
+    	return "todoist";
+    }
     
     @RequestMapping("/addtask")
     public String addTask(){
