@@ -17,6 +17,7 @@ import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -51,6 +52,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 @Controller
+@ComponentScan(basePackages = { "com.example" })
 public class WebApplicationController {
 
 	private final WebApplicationStorageService storageService;
@@ -109,7 +111,7 @@ public class WebApplicationController {
 //	}
 
     @RequestMapping("/todoist")
-    public String todoist(){
+    public String todoist(Map<String, Object> model){
     	return "todoist";
     }
     
@@ -244,8 +246,6 @@ public class WebApplicationController {
 
 		// Provide a tutorial of how to upload ics/csv files to outlook/google calendar
 		// (image files hosted on database)
-
-		//
 
 		// Open file
 		// for project in projects, get the list of project names and create buttons for

@@ -12,6 +12,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import com.example.helper.ColourGiver;
+import com.example.helper.WeeklySummaryHelper;
+
 import biweekly.ICalendar;
 import biweekly.component.VEvent;
 import biweekly.property.Summary;
