@@ -2,44 +2,63 @@ package com.example;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Random;
 import java.util.stream.Collectors;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.core.ResolvableType;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.util.DefaultPropertiesPersister;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.context.annotation.RequestScope;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import com.example.Model.Dog;
+import com.example.extensions.StorageFileNotFoundException;
+import com.example.model.Dog;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -47,6 +66,7 @@ import biweekly.Biweekly;
 import biweekly.ICalendar;
 import net.sf.mpxj.MPXJException;
 import net.sf.mpxj.ProjectFile;
+
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -64,65 +84,72 @@ public class WebApplicationController {
 	@Value("${spring.datasource.url}")
 	private String dbUrl;
 
-    @Autowired
-    public WebApplicationController(WebApplicationStorageService storageService, WebApplicationTodoistService todoistService) {
-        this.storageService = storageService;
-        this.todoistService = todoistService;
-    }
-    
-//	@GetMapping("/")
-//    public String listUploadedFiles(Model model) throws IOException {
-//        model.addAttribute("files", storageService.loadAll().map(
-//                path -> MvcUriComponentsBuilder.fromMethodName(WebApplicationController.class,
-//                        "serveFile", path.getFileName().toString()).build().toString())
-//                .collect(Collectors.toList()));
-//        return "uploadForm";
-//    }
-//
-//    @GetMapping("/upload/files/{filename:.+}")
-//    @ResponseBody
-//    public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-//
-//        Resource file = storageService.loadAsResource(filename);
-//        return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION,
-//                "attachment; filename=\"" + file.getFilename() + "\"").body(file);
-//    }
-//
-//    @PostMapping("/")
-//    public String handleFileUpload(@RequestParam("file") MultipartFile file,
-//            RedirectAttributes redirectAttributes) {
-//
-//        storageService.store(file);
-//        redirectAttributes.addFlashAttribute("message",
-//                "You successfully uploaded " + file.getOriginalFilename() + "!");
-//
-//        return "redirect:/";
-//    }
-//
-//    @ExceptionHandler(StorageFileNotFoundException.class)
-//    public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
-//        return ResponseEntity.notFound().build();
-//    }
-//    
-//	// file uploader app
-//	@RequestMapping("/fileupload")
-//	public String fileupload(Map<String, Object> model) {
-//		return "fileupload";
+	String cid = "a0926c2f533a448bb14213e5bae8a964";
+	String csecret = "3534a321bc474ce18ee8134aae2720f1";
+
+	@Autowired
+	public WebApplicationController(WebApplicationStorageService storageService,
+			WebApplicationTodoistService todoistService) {
+		this.storageService = storageService;
+		this.todoistService = todoistService;
+
+	}
+
+	private final String API_URL = "https://todoist.com/api/v8/sync";
+	private final static String API_AUTH = "https://todoist.com/oauth/authorize";
+	private final static String API_TOKEN = "https://todoist.com/oauth/access_token";
+	private final String WEB_REDIRECT = "http://localhost:5000/recieveOAuthReply";
+	private static final String SCOPE = "data:read_write";
+	private static final String RESPONSE_TYPE = "code";// data:read //data:read_write
+
+	// .query("redirect_uri=http://localhost:5000/recieveOAuthReply")
+	// https://todoist.com/oauth/authorize?client_id=0926c2f533a448bb14213e5bae8a964
+	// https://www.getpostman.com/oauth2/callback
+	// https://todoist.com/oauth/authorize?client_id=a0926c2f533a448bb14213e5bae8a964&scope=data:read
+	// https://todoist.com/oauth/access_token?client_id=a0926c2f533a448bb14213e5bae8a964
+	// a0926c2f533a448bb14213e5bae8a964
+	// 3534a321bc474ce18ee8134aae2720f1
+
+//	@RequestMapping(value = "/redirect", method = RequestMethod.GET)
+//	public void method(HttpServletResponse httpServletResponse) {
+//	    httpServletResponse.setHeader("Location", projectUrl);
+//	    httpServletResponse.setStatus(302);
+//	}
+//	
+//	@RequestMapping(value = "/redirect", method = RequestMethod.GET)
+//	public ModelAndView method() {
+//	    return new ModelAndView("redirect:" + projectUrl);
 //	}
 
-    @RequestMapping("/todoist")
-    public String todoist(Map<String, Object> model){
-    	return "todoist";
-    }
-    
-    @RequestMapping("/addtask")
-    public String addTask(){
-    	return "addtask";
-    }
-    
-    
+	@RequestMapping(value = "/oauthTodo", method = RequestMethod.GET)
+	public ModelAndView sendOAuth() {
+
+		StringBuilder sb = new StringBuilder();
+		sb.append(API_AUTH);
+		sb.append("?");
+		sb.append("response_type=");
+		sb.append(RESPONSE_TYPE);
+		sb.append("&");
+		sb.append("client_id=");
+		sb.append(cid);
+		sb.append("&");
+		sb.append("scope=");
+		sb.append(SCOPE);
+		String authUrl = sb.toString();
+
+		return new ModelAndView("redirect:" + authUrl);
+	}
+
+	@RequestMapping(value = "/callback", method = RequestMethod.GET)
+	public String callbackTodoist(Map<String, Object> model, @RequestParam(value = "code") String code) {
+		System.out.println(code);
+		model.put("message", code);
+
+		return "callback";
+	}
+
 	@RequestMapping("/")
-	String index() {
+	String index(HttpServletRequest request) {
 		return "index";
 	}
 

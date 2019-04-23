@@ -1,4 +1,4 @@
-package com.example.extensions;
+package com.example.helper;
 
 public interface TodoistService {
 	

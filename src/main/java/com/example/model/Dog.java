@@ -1,4 +1,4 @@
-package com.example.Model;
+package com.example.model;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 
@@ -20,17 +20,12 @@ public class Dog {
 	private Breed breed;
 	private String id;
 	private String url;
-	private int width;
-	private int height;
 	
-	
-	public Dog(Breed breed, String id, String url, int width, int height) {
+	public Dog(Breed breed, String id, String url) {
 		super();
 		this.breed = breed;
 		this.id = id;
 		this.url = url;
-		this.width = width;
-		this.height = height;
 	}
 
 	@JsonGetter
@@ -61,28 +56,6 @@ public class Dog {
 
 	public void setUrl(String url) {
 		this.url = url;
-	}
-
-	@JsonGetter
-	public int getWidth() {
-		return width;
-	}
-
-
-	public void setWidth(int width) {
-		this.width = width;
-	}
-
-	@JsonGetter
-	public int getHeight() {
-		return height;
-	}
-
-
-	public void setHeight(int height) {
-		this.height = height;
-	}
-	
-	
+	}	
 
 }

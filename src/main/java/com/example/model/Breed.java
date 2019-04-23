@@ -1,4 +1,4 @@
-package com.example.Model;
+package com.example.model;
 
 import com.fasterxml.jackson.annotation.JsonGetter;
 
@@ -14,8 +14,8 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 //	  "temperament":"Outgoing, Friendly, Alert, Confident, Intelligent, Courageous",
 //	  "origin":"United Kingdom, England"}],
 public class Breed {
-	private String weight;
-	private String height;
+	private Weight weight;
+	private Height height;
 	private int id;
 	private String name;
 	private String bred_for;
@@ -23,8 +23,9 @@ public class Breed {
 	private String life_span;
 	private String temperament;
 	private String origin;
-	
-	public Breed(String weight, String height, int id, String name, String bred_for, String breed_group, String life_span, String temperment, String origin) {
+
+	public Breed(Weight weight, Height height, int id, String name, String bred_for, String breed_group,
+			String life_span, String temperment, String origin) {
 		this.weight = weight;
 		this.height = height;
 		this.id = id;
@@ -34,22 +35,25 @@ public class Breed {
 		this.temperament = temperment;
 		this.origin = origin;
 	}
-
-	public String getWeight() {
+	
+	@JsonGetter
+	public Weight getWeight() {
 		return weight;
 	}
 
-	public void setWeight(String weight) {
+	public void setWeight(Weight weight) {
 		this.weight = weight;
 	}
+	
 	@JsonGetter
-	public String getHeight() {
+	public Height getHeight() {
 		return height;
 	}
 
-	public void setHeight(String height) {
+	public void setHeight(Height height) {
 		this.height = height;
 	}
+
 	@JsonGetter
 	public int getId() {
 		return id;
@@ -58,6 +62,7 @@ public class Breed {
 	public void setId(int id) {
 		this.id = id;
 	}
+
 	@JsonGetter
 	public String getName() {
 		return name;
@@ -66,6 +71,7 @@ public class Breed {
 	public void setName(String name) {
 		this.name = name;
 	}
+
 	@JsonGetter
 	public String getBred_for() {
 		return bred_for;
@@ -74,6 +80,7 @@ public class Breed {
 	public void setBred_for(String bred_for) {
 		this.bred_for = bred_for;
 	}
+
 	@JsonGetter
 	public String getBreed_group() {
 		return breed_group;
@@ -82,6 +89,7 @@ public class Breed {
 	public void setBreed_group(String breed_group) {
 		this.breed_group = breed_group;
 	}
+
 	@JsonGetter
 	public String getLife_span() {
 		return life_span;
@@ -90,6 +98,7 @@ public class Breed {
 	public void setLife_span(String life_span) {
 		this.life_span = life_span;
 	}
+
 	@JsonGetter
 	public String getTemperament() {
 		return temperament;
@@ -98,6 +107,7 @@ public class Breed {
 	public void setTemperament(String temperament) {
 		this.temperament = temperament;
 	}
+
 	@JsonGetter
 	public String getOrigin() {
 		return origin;

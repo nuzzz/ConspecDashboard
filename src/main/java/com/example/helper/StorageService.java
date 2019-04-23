@@ -1,4 +1,4 @@
-package com.example.extensions;
+package com.example.helper;
 
 import java.nio.file.Path;
 import java.util.stream.Stream;

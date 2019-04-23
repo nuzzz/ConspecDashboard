@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.extensions.StorageException;
 import com.example.extensions.StorageFileNotFoundException;
-import com.example.extensions.StorageService;
+import com.example.helper.StorageService;
 
 @Service
 public class WebApplicationStorageService implements StorageService {
