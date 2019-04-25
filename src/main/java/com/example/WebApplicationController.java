@@ -122,37 +122,37 @@ public class WebApplicationController {
 	private static final String SCOPE = "data:read_write";// data:read //data:read_write
 	private static final String RESPONSE_TYPE = "code";
 
+	
 	@RequestMapping("/")
 	String index() {
-		 ProjectFile projectData = initProjectStuff();
-		 //Create project
-		 createProject("Project Schedule 03-03-19.mpp");
-		 //compare with datenow to choose which tasks to add into bennington setapak
-		 LocalDate dateNow = LocalDate.now();
-		 
-		 for(Task task : projectData.getTasks()){
-				//This task is an activity if it fulfills 3 conditions:
-				//1. If taskname does not contain milestone and
-				//2. If task has a parent task and
-				//3. If task has no children task
-				if(!task.getName().contains("Milestone") && 
-						task.getParentTask()!=null && 
-						task.getChildTasks().size()==0){
-			
-					
-					
+
+		/* This method does not work due to sending too many request at once.
+		*/
+		WeeklySummaryHelper wsh = new WeeklySummaryHelper();
+		ProjectFile projectData = initProjectStuff();
+		// Create project
+		long project_id = createProject("Project Schedule 03-03-19.mpp");
+		// compare with datenow to choose which tasks to add into bennington setapak
+		LocalDate dateNow = LocalDate.now();
+
+		for (Task task : projectData.getTasks()) {
+			// This task is an activity if it fulfills 3 conditions:
+			// 1. If taskname does not contain milestone and
+			// 2. If task has a parent task and
+			// 3. If task has no children task
+			if (!task.getName().contains("Milestone") && task.getParentTask() != null
+					&& task.getChildTasks().size() == 0) {
+
+				if (!wsh.convertToLocalDateViaInstant(task.getStart()).isAfter(dateNow)) {
+					addNewTask(task, project_id);
 				}
 			}
-		
-		//createProject("New project 1234");
-		//System.out.println(getProjects().getBody());
-		//addNewTask();
+		}
 		return "index";
 	}
 	// upload file
 
 	// load all project tasks into memory with start and end date
-
 
 	public void runAutomatedChecklist() {// ArrayList<Task> projectData) {
 
@@ -160,7 +160,7 @@ public class WebApplicationController {
 		LocalDate dateNow = LocalDate.now();
 
 		// create project in todoist
-		
+
 		// TODO: replace PROJECT_NAME and TIME_NOW
 		createProject("PROJECT_NAME TIME_NOW");
 
@@ -184,8 +184,6 @@ public class WebApplicationController {
 		return new ModelAndView("redirect:" + revokeURL);
 	}
 
-	
-	
 	public ProjectFile initProjectStuff() {
 		String PROJECT_FILENAME = "Project Schedule 03-03-19.mpp";
 
@@ -212,49 +210,49 @@ public class WebApplicationController {
 		}
 		return project;
 	}
-	//private ResponseEntity<String> addNewTask(Task task, Project project) {
-	private ResponseEntity<String> addNewTask(){
+//
+//	private void createProjectv2() {
+//		String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
+//
+//		UUID newID = UUID.randomUUID();
+//		ResponseEntity<String> result = new ResponseEntity<String>(HttpStatus.NOT_FOUND);
+//		UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("todoist.com")
+//				.path("/API/v8/projects");
+//	}
+//	
+	private ResponseEntity<String> addNewTask(Task task, long project_id) {
 		ProjectFile projectData = initProjectStuff();
-		
-		 
-		int i = 0;
-		
-		Task newTask1 = projectData.getTasks().get(0);
-		Task newTask2 = projectData.getTasks().get(1);
-		
-		//Task task = new Task(null, task);
-		//Project project = new Project(i, csecret, i);
+
 		String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
 		UUID newID = UUID.randomUUID();
 		Set<Integer> newLabelList = new HashSet<Integer>();
-		
+
 		WeeklySummaryHelper wsh = new WeeklySummaryHelper();
-		
+
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-		//String date_str = wsh.convertToLocalDateViaInstant(task.getFinish()).format(formatter);
-		String date_str = wsh.convertToLocalDateViaInstant(newTask1.getFinish()).format(formatter);
-		Due due = new Due(date_str, "", "" , "", false);
-		
+		String date_str = wsh.convertToLocalDateViaInstant(task.getFinish()).format(formatter);
+
+		Due due = new Due(date_str, "", "", "", false);
+
 		ResponseEntity<String> result = new ResponseEntity<String>(HttpStatus.OK);
-		UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance()
-			      .scheme("https").host("beta.todoist.com")
-			      .path("/API/v8/tasks");
-		
+		UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("beta.todoist.com")
+				.path("/API/v8/tasks");
+
 		String postTasksURL = uriBuilder.build().encode().toUriString();
-		
+
 		RestTemplate restTemplate = new RestTemplate();
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 		headers.set("X-Request-Id", newID.toString());
 		headers.set("Authorization", "Bearer " + ACCESS_TOKEN);
-		
+
 		TodoistTask todoistTask = null;
 		try {
-			// project(id,name,order)                                                                2209473329
-			//todoistTask = new TodoistTask(Long.parseLong(newID.toString()), false, task.getName(), 2209473329L, 1000, newLabelList, 0, due, 1);
-			//missing due and testing indent
-			todoistTask = new TodoistTask(123, false, newTask1.getName()+"lol", 2209473329L, 100, newLabelList, 0, due, 2);
+			// project(id,name,order)
+			// TODO: missing due and indent
+			todoistTask = new TodoistTask(123, false, task.getName(), project_id, -1, newLabelList, 0, due, 1);
+
 			HttpEntity<TodoistTask> entity = new HttpEntity<>(todoistTask, headers);
 			System.out.println(entity);
 			result = restTemplate.postForEntity(postTasksURL, entity, String.class);
@@ -286,7 +284,7 @@ public class WebApplicationController {
 		TodoistProject newProject = null;
 		try {
 			// project(id,name,order)
-			
+
 			newProject = new TodoistProject(project_id, false, projectName, 1, 1, 2);
 			HttpEntity<TodoistProject> entity = new HttpEntity<>(newProject, headers);
 			System.out.println(entity);
@@ -298,14 +296,14 @@ public class WebApplicationController {
 		}
 		String jsonString = result.getBody();
 		ObjectMapper mapper = new ObjectMapper();
-	    try {
+		try {
 			JsonNode actualObj = mapper.readTree(jsonString);
 			project_id = Long.parseLong(actualObj.get("id").asText());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
 		return project_id;
 	}
 
