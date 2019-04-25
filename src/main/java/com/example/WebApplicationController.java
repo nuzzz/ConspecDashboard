@@ -127,7 +127,7 @@ public class WebApplicationController {
 	String index() {
 
 		/* This method does not work due to sending too many request at once.
-		*/
+
 		WeeklySummaryHelper wsh = new WeeklySummaryHelper();
 		ProjectFile projectData = initProjectStuff();
 		// Create project
@@ -148,6 +148,7 @@ public class WebApplicationController {
 				}
 			}
 		}
+		 */
 		return "index";
 	}
 	// upload file
