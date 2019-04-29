@@ -4,6 +4,7 @@ import java.util.Set;
 
 public class TodoistTask extends TodoistObject{
 	private long id;
+	private String temp_id;
 	private boolean deleted;
 	private String content;
 	private long project_id;
@@ -13,7 +14,7 @@ public class TodoistTask extends TodoistObject{
 	private TodoistDue due;
 	private int indent;
 
-	public TodoistTask(long id, boolean deleted, String content, long project_id, int order, Set<Integer> label_list, int priority, TodoistDue due,
+	public TodoistTask(long id, boolean deleted, String temp_id, String content, long project_id, int order, Set<Integer> label_list, int priority, TodoistDue due,
 			int indent) {
 		super(id, deleted);
 		this.content = content;
@@ -79,6 +80,14 @@ public class TodoistTask extends TodoistObject{
 
 	public void setIndent(int indent) {
 		this.indent = indent;
+	}
+	
+	public String getTemp_id() {
+		return temp_id;
+	}
+
+	public void setTemp_id(String temp_id) {
+		this.temp_id = temp_id;
 	}
 
 }

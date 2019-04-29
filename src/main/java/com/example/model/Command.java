@@ -37,7 +37,7 @@ public class Command {
 	public Map<String, Object> getArgs() {
 		return args;
 	}
-	public void setArgs(Map<String, Object> args) {
+	public void setArgs(Map<String, Object	> args) {
 		this.args = args;
 	}
 	
