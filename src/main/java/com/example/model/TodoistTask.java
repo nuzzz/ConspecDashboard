@@ -10,10 +10,10 @@ public class TodoistTask extends TodoistObject{
 	private int order; // childOrder
 	private Set<Integer> label_list;
 	private int priority;
-	private Due due;
+	private TodoistDue due;
 	private int indent;
 
-	public TodoistTask(long id, boolean deleted, String content, long project_id, int order, Set<Integer> label_list, int priority, Due due,
+	public TodoistTask(long id, boolean deleted, String content, long project_id, int order, Set<Integer> label_list, int priority, TodoistDue due,
 			int indent) {
 		super(id, deleted);
 		this.content = content;
@@ -65,11 +65,11 @@ public class TodoistTask extends TodoistObject{
 		this.priority = priority;
 	}
 
-	public Due getDue() {
+	public TodoistDue getDue() {
 		return due;
 	}
 
-	public void setDue(Due due) {
+	public void setDue(TodoistDue due) {
 		this.due = due;
 	}
 

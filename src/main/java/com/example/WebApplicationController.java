@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
@@ -32,6 +33,7 @@ import javax.sql.DataSource;
 import org.apache.tomcat.jni.Time;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.core.ResolvableType;
@@ -45,6 +47,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.DefaultPropertiesPersister;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,17 +69,18 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.extensions.StorageFileNotFoundException;
 import com.example.helper.WeeklySummaryHelper;
+import com.example.model.Command;
 import com.example.model.Dog;
-import com.example.model.Due;
+import com.example.model.TodoistDue;
 import com.example.model.TodoistProject;
 import com.example.model.TodoistTask;
+import com.example.model.Token;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.todoist.pojo.Item;
-import com.todoist.pojo.Project;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -84,6 +89,7 @@ import biweekly.ICalendar;
 import biweekly.component.VEvent;
 import biweekly.property.Summary;
 import biweekly.util.Duration;
+//import org.apache.commons.text.StringEscapeUtils;
 import net.sf.mpxj.MPXJException;
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Task;
@@ -108,6 +114,9 @@ public class WebApplicationController {
 	String csecret = "3534a321bc474ce18ee8134aae2720f1";
 
 	@Autowired
+	private RestTemplate restTemplate;
+
+	@Autowired
 	public WebApplicationController(WebApplicationStorageService storageService,
 			WebApplicationTodoistService todoistService) {
 		this.storageService = storageService;
@@ -122,33 +131,10 @@ public class WebApplicationController {
 	private static final String SCOPE = "data:read_write";// data:read //data:read_write
 	private static final String RESPONSE_TYPE = "code";
 
-	
 	@RequestMapping("/")
 	String index() {
+		dosomething();
 
-		/* This method does not work due to sending too many request at once.
-
-		WeeklySummaryHelper wsh = new WeeklySummaryHelper();
-		ProjectFile projectData = initProjectStuff();
-		// Create project
-		long project_id = createProject("Project Schedule 03-03-19.mpp");
-		// compare with datenow to choose which tasks to add into bennington setapak
-		LocalDate dateNow = LocalDate.now();
-
-		for (Task task : projectData.getTasks()) {
-			// This task is an activity if it fulfills 3 conditions:
-			// 1. If taskname does not contain milestone and
-			// 2. If task has a parent task and
-			// 3. If task has no children task
-			if (!task.getName().contains("Milestone") && task.getParentTask() != null
-					&& task.getChildTasks().size() == 0) {
-
-				if (!wsh.convertToLocalDateViaInstant(task.getStart()).isAfter(dateNow)) {
-					addNewTask(task, project_id);
-				}
-			}
-		}
-		 */
 		return "index";
 	}
 	// upload file
@@ -168,6 +154,12 @@ public class WebApplicationController {
 		// save projectid to memory
 
 		// add task to project, if exists
+	}
+
+	@Bean
+	public RestTemplate restTemplate(RestTemplateBuilder builder) {
+		// Do any additional configuration here
+		return builder.build();
 	}
 
 	@RequestMapping(value = "/todoist/revoke", method = RequestMethod.POST)
@@ -211,16 +203,67 @@ public class WebApplicationController {
 		}
 		return project;
 	}
-//
-//	private void createProjectv2() {
-//		String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
-//
-//		UUID newID = UUID.randomUUID();
-//		ResponseEntity<String> result = new ResponseEntity<String>(HttpStatus.NOT_FOUND);
-//		UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("todoist.com")
-//				.path("/API/v8/projects");
-//	}
-//	
+
+	private void dosomething() {
+		String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
+		Token access_token = new Token(ACCESS_TOKEN);
+		UUID tempID = UUID.randomUUID();
+		UUID cmdID = UUID.randomUUID();
+		ResponseEntity<String> result = new ResponseEntity<String>(HttpStatus.NOT_FOUND);
+		// https://todoist.com/api/v8/sync
+		UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("todoist.com")
+				.path("/api/v8/sync");
+		String syncURL = uriBuilder.build().encode().toUriString();		
+		
+		UUID tempID2 = UUID.randomUUID();
+		UUID cmdID2 = UUID.randomUUID();
+		//String date, String timezone, String string, String lang, boolean isRecurring
+		TodoistDue d = new TodoistDue("2019-04-27", "", "", "");
+				
+		Map<String, Object> arguments2 = new HashMap<String, Object>();
+		arguments2.put("content", "sub task 4");
+		arguments2.put("due", d);//.replace("\\\\", ""));
+		arguments2.put("indent", "2");
+		arguments2.put("project_id", String.valueOf(2209532923L));
+		
+		
+		Command addItemCommand = new Command("item_add", cmdID2.toString(), tempID2.toString(), arguments2);
+		
+		List<Command> commands = new ArrayList<Command>();
+		//commands.add(addProjCommand);
+		commands.add(addItemCommand);
+				
+
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+		headers.set("token", access_token.getToken());
+		headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+		headers.set("Authorization", "Bearer " + ACCESS_TOKEN);
+
+		try {
+			ObjectMapper objectMapper = new ObjectMapper();
+			String jsonStr = objectMapper.writeValueAsString(commands);
+			MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
+			map.add("commands", jsonStr);
+			
+			MultiValueMap<String, Object> commandsMap = new LinkedMultiValueMap<>();
+			commandsMap.add("commands", jsonStr);
+			
+		    HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<MultiValueMap<String, Object>>(commandsMap, headers);
+			result = restTemplate.postForEntity(syncURL, entity, String.class);
+			System.out.println("Entity: " + entity.getBody());
+			System.out.println("___________________");
+
+			System.out.println("Result: " + result);
+			System.out.println("___________________");
+		}
+
+		catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+
+	}
+
 	private ResponseEntity<String> addNewTask(Task task, long project_id) {
 		ProjectFile projectData = initProjectStuff();
 
@@ -233,15 +276,13 @@ public class WebApplicationController {
 		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 		String date_str = wsh.convertToLocalDateViaInstant(task.getFinish()).format(formatter);
 
-		Due due = new Due(date_str, "", "", "", false);
+		TodoistDue due = new TodoistDue(date_str, "", "", "");
 
 		ResponseEntity<String> result = new ResponseEntity<String>(HttpStatus.OK);
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("beta.todoist.com")
 				.path("/API/v8/tasks");
 
 		String postTasksURL = uriBuilder.build().encode().toUriString();
-
-		RestTemplate restTemplate = new RestTemplate();
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -264,7 +305,7 @@ public class WebApplicationController {
 		return result;
 	}
 
-	private static long createProject(String projectName) {
+	private long createProject(String projectName) {
 		String endpoint = "https://beta.todoist.com/API/v8/projects";
 		String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
 
@@ -274,8 +315,6 @@ public class WebApplicationController {
 				.path("/API/v8/projects");
 
 		String postProjectsURL = uriBuilder.build().encode().toUriString();
-
-		RestTemplate restTemplate = new RestTemplate();
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -308,7 +347,7 @@ public class WebApplicationController {
 		return project_id;
 	}
 
-	private static ResponseEntity<String> getProjects() {
+	private ResponseEntity<String> getProjects() {
 		String PROJECTS_URL = "https://beta.todoist.com/API/v8/projects";
 		String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
 		// https://beta.todoist.com/API/v8/projects
@@ -317,8 +356,6 @@ public class WebApplicationController {
 				.path("/API/v8/projects").queryParam("token", ACCESS_TOKEN);
 
 		String getProjectsURL = uriBuilder.build().encode().toUriString();
-
-		RestTemplate restTemplate = new RestTemplate();
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
