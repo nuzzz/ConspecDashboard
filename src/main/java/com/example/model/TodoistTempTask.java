@@ -1,9 +1,10 @@
 package com.example.model;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
 
-public class TodoistTask {
+public class TodoistTempTask {
 	//task identifiers
 	private long id;
 	private String temp_id;
@@ -31,7 +32,7 @@ public class TodoistTask {
 	private boolean auto_reminder; // When this option is enabled, the default reminder will be added to the new item if it has a due date with time set. See also the auto_reminder user option for more info about the default reminder.
 	private boolean auto_parse_labels; //When this option is enabled, the labels will be parsed from the task content and added to the task. In case the label doesn’t exist, a new one will be created. 
 	
-	public TodoistTask(long id, String temp_id, int data_id, String content, long project_id,
+	public TodoistTempTask(String temp_id, Integer data_id, String content, long project_id,
 						LocalDate startDate, LocalDate endDate, TodoistDue due, 
 						int priority, Set<Integer> labels) {
 		this.id = id;
@@ -48,7 +49,7 @@ public class TodoistTask {
 		this.labels = labels;
 	}
 
-	
+
 	public long getId() {
 		return id;
 	}

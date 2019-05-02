@@ -71,10 +71,12 @@ import com.example.extensions.StorageFileNotFoundException;
 import com.example.extensions.TodoistException;
 import com.example.helper.WeeklySummaryHelper;
 import com.example.model.Command;
+import com.example.model.ConspecTask;
 import com.example.model.Dog;
 import com.example.model.TodoistDue;
 import com.example.model.TodoistProject;
 import com.example.model.TodoistTask;
+import com.example.model.TodoistTempTask;
 import com.example.model.Token;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -82,6 +84,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -123,179 +126,134 @@ public class WebApplicationController {
 		this.storageService = storageService;
 		this.todoistService = todoistService;
 	}
-	
+
 	public String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
-	
-	private final static String API_URL = "https://todoist.com/api/v8/sync";
-	private final static String API_AUTH = "https://todoist.com/oauth/authorize";
-	private final static String API_TOKEN = "https://todoist.com/oauth/access_token";
-	private final static String WEB_REDIRECT = "http://localhost:5000/callback";
+
+	private static final String API_URL = "https://todoist.com/api/v8/sync";
+	private static final String API_AUTH = "https://todoist.com/oauth/authorize";
+	private static final String API_TOKEN = "https://todoist.com/oauth/access_token";
+	private static final String WEB_REDIRECT = "http://localhost:5000/callback";
 	private static final String SCOPE = "data:read_write";// data:read //data:read_write
 	private static final String RESPONSE_TYPE = "code";
+	private static final int MAX_COMMANDS = 25;
 
+	
 	@RequestMapping("/")
 	String index() {
 		runAutomatedChecklist();
-
 		return "index";
 	}
+	
 	// upload file
 
 	// load all project tasks into memory with start and end date
 
 	public void runAutomatedChecklist() {// ArrayList<Task> projectData) {
-		//Login //TODO: Unimplemented
-		
+		// Login //TODO: Unimplemented login
+
 		// get time now
 		LocalDate dateNow = LocalDate.now();
 
 		// create project in todoist
-		
+		ProjectFile projectData = initProjectStuff();
 		// TODO: replace PROJECT_NAME and TIME_NOW
-		//createProject("PROJECT_NAME TIME_NOW");
-		long projectID = createProject("Bennington Checklist "+ dateNow.format(DateTimeFormatter.ofPattern("yyyyMMdd")), dateNow);
+		// createProject("PROJECT_NAME TIME_NOW");
 		// save projectid to memory
+		long projectID = createProject(
+				"Bennington Checklist " + dateNow.format(DateTimeFormatter.ofPattern("yyyyMMdd")), dateNow);
+		
+
 		todoistService.clearCommands();
 		
-		List<TodoistTask> taskList = createTaskList(projectID, dateNow);
-		createTasks(taskList);
+		List<TodoistTempTask> taskList = todoistService.createTempTaskList(projectData, projectID, dateNow);
 		
-		// add task to project, if exists
+		List<List<TodoistTempTask>> taskListSplitByMax = Lists.partition(taskList, MAX_COMMANDS);
+		
+		//TODO: 
+		// 1. On failure, 
+		// 2. If task already exist,
+		
+		for(List<TodoistTempTask> currentTaskList: taskListSplitByMax) {
+			createTempTasks(currentTaskList);
+			todoistService.clearCommands();
+		}
 	}
-
 	
+	//This returns a long project id only if the command was successful
 	public long createProject(String projectName, LocalDate dateNow) {
-		todoistService.createTodoistProject("Bennington Checklist "+ dateNow.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+		String projectTempId = todoistService.createTodoistProject(
+				"Bennington Checklist " + dateNow.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
 		
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-		headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-		headers.set("Authorization", "Bearer " + todoistService.getAccessToken());
+		ResponseEntity<String> result = sendCommands();
 		
-		HttpEntity<MultiValueMap<String, Object>> entity = null;
-		ResponseEntity<String> result = null;
-		
-		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-			String commandsToJSON = objectMapper.writeValueAsString(todoistService.getCommands());
-			
-			MultiValueMap<String, Object> commandsMap = new LinkedMultiValueMap<>();
-			commandsMap.add("commands", commandsToJSON);
-			
-		    entity = new HttpEntity<MultiValueMap<String, Object>>(commandsMap, headers);
-			result = restTemplate.postForEntity(todoistService.getSyncURL(), entity, String.class);
-			System.out.println("Entity: " + entity.getBody());
-			System.out.println("___________________");
-	
-			System.out.println("Result: " + result);
-			System.out.println("___________________");
-		}
-	
-		catch (JsonProcessingException e) {
-			e.printStackTrace();
-		}
 		String jsonString = result.getBody();
 		ObjectMapper mapper = new ObjectMapper();
 		long project_id = -1L;
 		try {
-			JsonNode actualObj = mapper.readTree(jsonString);
-			project_id  = Long.parseLong(actualObj.get("id").asText());
+			JsonNode rootNode = mapper.readTree(jsonString);
+			project_id = rootNode.get("temp_id_mapping").get(projectTempId).asLong();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
 		return project_id;
 	}
-	
-	/* Create tasks should return a list of all tasks to be added,
-	 * The tasks need to contain the following attributes
-	 * Description,
-	 * Start date,
-	 * End date,
-	 * TemporaryID,
-	 * ProjectID
-	 * Indent level (do some calculation)
-	 * Child order within parent lvl
-	 */
-	//	
-	//private long id;
-	//private boolean deleted;
-	//private String content;
-	//private long project_id;
-	//private int order; // childOrder
-	//private Set<Integer> label_list;
-	//private int priority;
-	//private TodoistDue due;
-	//private int indent;
-	public List<TodoistTask> createTaskList(long projectID, LocalDate date) {
-		ProjectFile projectData = initProjectStuff();
-		List<TodoistTask> todoistTasks = new ArrayList<TodoistTask>();
-		int taskNumber = 1;
-		for (Task task: projectData.getTasks()) {
-			int indent = 0;
-			if(task.getParentTask()==null) {
-				indent = 1;
-			}else if(task.getParentTask().getParentTask()==null) {
-				indent = 2;
-			}else if(task.getParentTask().getParentTask().getParentTask()==null) {
-				indent = 3;
-			}else if(task.getParentTask().getParentTask().getParentTask().getParentTask()==null) {
-				indent = 4;
-			}else if(task.getParentTask().getParentTask().getParentTask().getParentTask().getParentTask()==null) {
-				indent = 5;
-			}
+
+	private ResponseEntity<String> createTempTasks(List<TodoistTempTask> taskList) {
+		ResponseEntity<String> result = null;
+		
+		List<Command> commands = new ArrayList<>();
+
+		for (TodoistTempTask task : taskList) {
+			String commandID = UUID.randomUUID().toString();
 			
-			 TodoistTask newTodoistTask = todoistService.createTodoistTask(task,projectID,taskNumber,indent);
-			 todoistTasks.add(newTodoistTask);
-			 
+			Map<String, Object> taskArguments = new HashMap<String, Object>();
+			taskArguments.put("content", task.getContent());
+			taskArguments.put("due", task.getDue());
+			taskArguments.put("project_id", task.getProject_id());
+			taskArguments.put("parent_id", task.getParent_id());
+			taskArguments.put("child_order", task.getChild_order());
+
+			Command addItemCommand = new Command("item_add", commandID, task.getTemp_id(), taskArguments);
+			commands.add(addItemCommand);
 		}
-		return todoistTasks;
+
+		todoistService.setCommands(commands);
+		result = sendCommands();
+
+		return result;
 	}
-	
-	private void createTasks(List<TodoistTask> taskList) {
-		// TODO Auto-generated method stub
+
+	public ResponseEntity<String> sendCommands() {
+		ResponseEntity<String> result = null;
+		
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 		headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
 		headers.set("Authorization", "Bearer " + todoistService.getAccessToken());
-		
+
 		HttpEntity<MultiValueMap<String, Object>> entity = null;
-		ResponseEntity<String> result = null;
-		
-		List<Command> commands = new ArrayList<>();
-		
-		for (TodoistTask task: taskList) {
-			
-			
-		}
-		
-		//todoistService.setCommands(commands);
-		
+
 		try {
 			ObjectMapper objectMapper = new ObjectMapper();
 			String commandsToJSON = objectMapper.writeValueAsString(todoistService.getCommands());
-			
+
 			MultiValueMap<String, Object> commandsMap = new LinkedMultiValueMap<>();
 			commandsMap.add("commands", commandsToJSON);
-			
-		    entity = new HttpEntity<MultiValueMap<String, Object>>(commandsMap, headers);
+
+			entity = new HttpEntity<MultiValueMap<String, Object>>(commandsMap, headers);
 			result = restTemplate.postForEntity(todoistService.getSyncURL(), entity, String.class);
-			System.out.println("Entity: " + entity.getBody());
-			System.out.println("___________________");
-	
-			System.out.println("Result: " + result);
-			System.out.println("___________________");
-		}
-	
-		catch (JsonProcessingException e) {
+//			System.out.println("Entity: " + entity.getBody());
+//			System.out.println("___________________");
+//	
+//			System.out.println("Result: " + result);
+//			System.out.println("___________________");
+		} catch (JsonProcessingException e) {
 			e.printStackTrace();
 		}
-		
-		
+		return result;
 	}
-	
-	
+
 	@Bean
 	public RestTemplate restTemplate(RestTemplateBuilder builder) {
 		// Do any additional configuration here
@@ -324,7 +282,8 @@ public class WebApplicationController {
 		ArrayList<ICalendar> calendars;
 		ConspecProjectManager conspecPM = null;
 		ProjectFile project = null;
-
+		
+		
 		String configPath = "config.properties";
 		Properties projProperties = new Properties();
 		try {
@@ -337,181 +296,14 @@ public class WebApplicationController {
 		try {
 			conspecPM = new ConspecProjectManager(PROJECT_FILENAME);
 			project = conspecPM.getProjectFile();
+			String projectName = project.getTasks().get(1).getName();
+			System.out.println(projectName);
 		} catch (MPXJException e) {
 			message = "Main|Failed to read project: " + e;
 			System.out.println("Main|Failed to read project: " + e);
 		}
 		return project;
 	}
-
-	private void dosomething() {
-		String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
-		Token access_token = new Token(ACCESS_TOKEN);
-		UUID tempID = UUID.randomUUID();
-		UUID cmdID = UUID.randomUUID();
-		ResponseEntity<String> result = new ResponseEntity<String>(HttpStatus.NOT_FOUND);
-		// https://todoist.com/api/v8/sync
-		UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("todoist.com")
-				.path("/api/v8/sync");
-		String syncURL = uriBuilder.build().encode().toUriString();		
-		
-		UUID tempID2 = UUID.randomUUID();
-		UUID cmdID2 = UUID.randomUUID();
-		//String date, String timezone, String string, String lang, boolean isRecurring
-		TodoistDue d = new TodoistDue("2019-04-27", "", "", "");
-				
-		Map<String, Object> arguments2 = new HashMap<String, Object>();
-		arguments2.put("content", "sub task 4");
-		arguments2.put("due", d);//.replace("\\\\", ""));
-		arguments2.put("indent", "2");
-		arguments2.put("project_id", String.valueOf(2209532923L));
-		
-		
-		Command addItemCommand = new Command("item_add", cmdID2.toString(), tempID2.toString(), arguments2);
-		
-		List<Command> commands = new ArrayList<Command>();
-		//commands.add(addProjCommand);
-		commands.add(addItemCommand);
-				
-
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-		headers.set("token", access_token.getToken());
-		headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-		headers.set("Authorization", "Bearer " + ACCESS_TOKEN);
-
-		try {
-			ObjectMapper objectMapper = new ObjectMapper();
-			String jsonStr = objectMapper.writeValueAsString(commands);
-			MultiValueMap<String, String> map = new LinkedMultiValueMap<String, String>();
-			map.add("commands", jsonStr);
-			
-			MultiValueMap<String, Object> commandsMap = new LinkedMultiValueMap<>();
-			commandsMap.add("commands", jsonStr);
-			
-		    HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<MultiValueMap<String, Object>>(commandsMap, headers);
-			result = restTemplate.postForEntity(syncURL, entity, String.class);
-			System.out.println("Entity: " + entity.getBody());
-			System.out.println("___________________");
-
-			System.out.println("Result: " + result);
-			System.out.println("___________________");
-		}
-
-		catch (JsonProcessingException e) {
-			e.printStackTrace();
-		}
-
-	}
-
-//	private ResponseEntity<String> addNewTask(Task task, long project_id) {
-//		ProjectFile projectData = initProjectStuff();
-//
-//		String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
-//		UUID newID = UUID.randomUUID();
-//		Set<Integer> newLabelList = new HashSet<Integer>();
-//
-//		WeeklySummaryHelper wsh = new WeeklySummaryHelper();
-//
-//		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-//		String date_str = wsh.convertToLocalDateViaInstant(task.getFinish()).format(formatter);
-//
-//		TodoistDue due = new TodoistDue(date_str, "", "", "");
-//
-//		ResponseEntity<String> result = new ResponseEntity<String>(HttpStatus.OK);
-//		UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("beta.todoist.com")
-//				.path("/API/v8/tasks");
-//
-//		String postTasksURL = uriBuilder.build().encode().toUriString();
-//
-//		HttpHeaders headers = new HttpHeaders();
-//		headers.setContentType(MediaType.APPLICATION_JSON);
-//		headers.set("X-Request-Id", newID.toString());
-//		headers.set("Authorization", "Bearer " + ACCESS_TOKEN);
-//
-//		TodoistTask todoistTask = null;
-//		try {
-//			// project(id,name,order)
-//			// TODO: missing due and indent
-//			todoistTask = new TodoistTask(123, false, task.getName(), project_id, -1, newLabelList, 0, due, 1);
-//
-//			HttpEntity<TodoistTask> entity = new HttpEntity<>(todoistTask, headers);
-//			System.out.println(entity);
-//			result = restTemplate.postForEntity(postTasksURL, entity, String.class);
-//			System.out.println(result);
-//		} catch (NumberFormatException e) {
-//			System.out.println("failed to parse newId in addNewTask function");
-//		}
-//		return result;
-//	}
-//
-//	private long createProject(String projectName) {
-//		String endpoint = "https://beta.todoist.com/API/v8/projects";
-//		String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
-//
-//		UUID newID = UUID.randomUUID();
-//		ResponseEntity<String> result = new ResponseEntity<String>(HttpStatus.NOT_FOUND);
-//		UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("beta.todoist.com")
-//				.path("/API/v8/projects");
-//
-//		String postProjectsURL = uriBuilder.build().encode().toUriString();
-//
-//		HttpHeaders headers = new HttpHeaders();
-//		headers.setContentType(MediaType.APPLICATION_JSON);
-//		headers.set("X-Request-Id", newID.toString());
-//		headers.set("Authorization", "Bearer " + ACCESS_TOKEN);
-//		long project_id = -1;
-//		TodoistProject newProject = null;
-//		try {
-//			// project(id,name,order)
-//
-//			newProject = new TodoistProject(project_id, false, projectName, 1, 1, 2);
-//			HttpEntity<TodoistProject> entity = new HttpEntity<>(newProject, headers);
-//			System.out.println(entity);
-//			result = restTemplate.postForEntity(postProjectsURL, entity, String.class);
-//			// System.out.println(result.getBody());
-//			System.out.println(result);
-//		} catch (NumberFormatException e) {
-//			System.out.println("failed to parse project id in createProject function");
-//		}
-//		String jsonString = result.getBody();
-//		ObjectMapper mapper = new ObjectMapper();
-//		try {
-//			JsonNode actualObj = mapper.readTree(jsonString);
-//			project_id = Long.parseLong(actualObj.get("id").asText());
-//		} catch (IOException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//
-//		return project_id;
-//	}
-//
-//	private ResponseEntity<String> getProjects() {
-//		String PROJECTS_URL = "https://beta.todoist.com/API/v8/projects";
-//		String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
-//		// https://beta.todoist.com/API/v8/projects
-//		// https://todoist.com/api/v8/sync
-//		UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("beta.todoist.com")
-//				.path("/API/v8/projects").queryParam("token", ACCESS_TOKEN);
-//
-//		String getProjectsURL = uriBuilder.build().encode().toUriString();
-//
-//		HttpHeaders headers = new HttpHeaders();
-//		headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-//		HttpEntity<String> entity = new HttpEntity<String>("parameters", headers);
-//
-//		ResponseEntity<String> result = restTemplate.exchange(getProjectsURL, HttpMethod.GET, entity, String.class);
-//
-//		return result;
-//	}
-//
-//	@RequestMapping(value = "/todoist/projects", method = RequestMethod.GET)
-//	public String todoistProjects(Map<String, String> model) {
-//		ResponseEntity<String> result = getProjects();
-//		model.put("message", result.getBody());
-//		return "/todoist/projects";
-//	}
 
 	@RequestMapping(value = "/oauthTodo", method = RequestMethod.GET)
 	public ModelAndView sendOAuth() {
