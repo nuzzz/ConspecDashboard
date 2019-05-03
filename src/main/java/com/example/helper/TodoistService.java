@@ -10,8 +10,6 @@ public interface TodoistService {
 
     void init(String accessToken);
 
-    void addTask();
-    
 	String createTodoistProject(String projectName);
 		
 	TodoistTempTask createTodoistTempTask(Task task, long project_id);

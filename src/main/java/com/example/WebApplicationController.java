@@ -4,9 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.net.URL;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -17,72 +14,55 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Random;
-import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
-import org.apache.tomcat.jni.Time;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.core.ResolvableType;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.util.DefaultPropertiesPersister;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.context.annotation.RequestScope;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.mvc.method.annotation.MvcUriComponentsBuilder;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.util.UriComponents;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.example.extensions.StorageFileNotFoundException;
-import com.example.extensions.TodoistException;
-import com.example.helper.WeeklySummaryHelper;
+import com.amazonaws.auth.AWSCredentials;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.PutObjectRequest;
+import com.amazonaws.services.s3.model.PutObjectResult;
+import com.example.helper.AmazonS3ClientService;
 import com.example.model.Command;
-import com.example.model.ConspecTask;
 import com.example.model.Dog;
-import com.example.model.TodoistDue;
-import com.example.model.TodoistProject;
-import com.example.model.TodoistTask;
 import com.example.model.TodoistTempTask;
-import com.example.model.Token;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.zaxxer.hikari.HikariConfig;
@@ -90,13 +70,8 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import biweekly.Biweekly;
 import biweekly.ICalendar;
-import biweekly.component.VEvent;
-import biweekly.property.Summary;
-import biweekly.util.Duration;
-//import org.apache.commons.text.StringEscapeUtils;
 import net.sf.mpxj.MPXJException;
 import net.sf.mpxj.ProjectFile;
-import net.sf.mpxj.Task;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -137,18 +112,111 @@ public class WebApplicationController {
 	private static final String RESPONSE_TYPE = "code";
 	private static final int MAX_COMMANDS = 25;
 
+    @Autowired
+    private AmazonS3ClientService amazonS3ClientService;
 	
+    @RequestMapping("/upload")
+    public String uploadPage() {
+        return "upload";
+    }
+
+    @RequestMapping(value = "/upload", method = RequestMethod.POST)
+    public String onUpload(MultipartFile file) {
+        //System.out.println(file.getOriginalFilename());
+        this.amazonS3ClientService.uploadFileToS3Bucket(file, true);
+        this.amazonS3ClientService.listAllFiles();
+        return "upload";
+    }
+
+//    @RequestMapping("uploadError")
+//    public ModelAndView onUploadError(HttpServletRequest request) {
+//        ModelAndView modelAndView = new ModelAndView("uploadPage");
+//        modelAndView.addObject("error", request.getAttribute(WebUtils.ERROR_MESSAGE_ATTRIBUTE));
+//        return modelAndView;
+//    }
+
+
+    
 	@RequestMapping("/")
-	String index() {
-		runAutomatedChecklist();
+	public String index(Map<String, Object> model) {
+		
+		//TODO: not implemented		
+		//uploadToS3();
+		//loadProjectData();
+		//readAndSaveTodoistProject();
+		//dailyUpdate(projectData);
+		
 		return "index";
+		//return "redirect:/upload";
 	}
 	
 	// upload file
 
 	// load all project tasks into memory with start and end date
 
-	public void runAutomatedChecklist() {// ArrayList<Task> projectData) {
+	
+//    @RequestMapping(value = "/", method = RequestMethod.POST)
+//    public Map<String, String> uploadFile(@RequestPart(value = "file") MultipartFile file)
+//    //public String uploadFile(@RequestPart(value = "file") MultipartFile file)
+//    {
+//        this.amazonS3ClientService.uploadFileToS3Bucket(file, true);
+//        
+//        Map<String, String> response = new HashMap<>();
+//        response.put("message", "file [" + file.getOriginalFilename() + "] uploading request submitted successfully.");
+//
+//        return response;
+//    }
+	
+//	@RequestMapping("/upload")
+//	String upload() {
+//		
+//		return "upload";
+//	}
+	
+//	private File convertMultiPartToFile(MultipartFile file) throws IOException {
+//	    File convFile = new File(file.getOriginalFilename());
+//	    FileOutputStream fos = new FileOutputStream(convFile);
+//	    fos.write(file.getBytes());
+//	    fos.close();
+//	    return convFile;
+//	}
+//	
+//	private String generateFileName(MultipartFile multiPart) {
+//	    return new Date().getTime() + "-" + multiPart.getOriginalFilename().replace(" ", "_");
+//	}
+//	
+//	private void uploadFileTos3bucket(String fileName, File file) {
+//		AWSCredentials credentials = new BasicAWSCredentials(
+//				  "AKIAYAMS47CA7A7CRO73", 
+//				  "ilsYe8gxWSnyLWrz3DvVHuzTR6Wvnyvw3BpAFTJ4"
+//				);
+//		
+//		AmazonS3 s3client = AmazonS3ClientBuilder
+//				  .standard()
+//				  .withCredentials(new AWSStaticCredentialsProvider(credentials))
+//				  .withRegion(Regions.AP_SOUTHEAST_1)
+//				  .build();
+//		
+//	    s3client.putObject(new PutObjectRequest("com.conspec", fileName, file)
+//	            .withCannedAcl(CannedAccessControlList.PublicReadWrite));
+//	}
+//	
+//	public String uploadFile(MultipartFile multipartFile) {
+//
+//	    String fileUrl = "";
+//	    try {
+//	        File file = convertMultiPartToFile(multipartFile);
+//	        String fileName = generateFileName(multipartFile);
+//	        fileUrl = "https://s3.ap-southeast-1.amazonaws.com" + "/" + "com.conspec" + "/" + fileName;
+//	        uploadFileTos3bucket(fileName, file);
+//	        file.delete();
+//	    } catch (Exception e) {
+//	       e.printStackTrace();
+//	    }
+//	    return fileUrl;
+//	}
+	
+	public void loadProjectData() {
 		// Login //TODO: Unimplemented login
 
 		// get time now
@@ -156,36 +224,33 @@ public class WebApplicationController {
 
 		// create project in todoist
 		ProjectFile projectData = initProjectStuff();
-		// TODO: replace PROJECT_NAME and TIME_NOW
-		// createProject("PROJECT_NAME TIME_NOW");
+
 		// save projectid to memory
-		long projectID = createProject(
-				"Bennington Checklist " + dateNow.format(DateTimeFormatter.ofPattern("yyyyMMdd")), dateNow);
 		
+		long projectID = createProject(projectData.getTasks().get(1).getName(), dateNow);
 
 		todoistService.clearCommands();
-		
+
 		List<TodoistTempTask> taskList = todoistService.createTempTaskList(projectData, projectID, dateNow);
-		
+
 		List<List<TodoistTempTask>> taskListSplitByMax = Lists.partition(taskList, MAX_COMMANDS);
-		
-		//TODO: 
-		// 1. On failure, 
+
+		// TODO:
+		// 1. On failure,
 		// 2. If task already exist,
-		
-		for(List<TodoistTempTask> currentTaskList: taskListSplitByMax) {
+
+		for (List<TodoistTempTask> currentTaskList : taskListSplitByMax) {
 			createTempTasks(currentTaskList);
 			todoistService.clearCommands();
 		}
 	}
-	
-	//This returns a long project id only if the command was successful
+
+	// This returns a long project id only if the command was successful
 	public long createProject(String projectName, LocalDate dateNow) {
-		String projectTempId = todoistService.createTodoistProject(
-				"Bennington Checklist " + dateNow.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
-		
+		String projectTempId = todoistService.createTodoistProject( projectName + " " + dateNow.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+
 		ResponseEntity<String> result = sendCommands();
-		
+
 		String jsonString = result.getBody();
 		ObjectMapper mapper = new ObjectMapper();
 		long project_id = -1L;
@@ -201,12 +266,12 @@ public class WebApplicationController {
 
 	private ResponseEntity<String> createTempTasks(List<TodoistTempTask> taskList) {
 		ResponseEntity<String> result = null;
-		
+
 		List<Command> commands = new ArrayList<>();
 
 		for (TodoistTempTask task : taskList) {
 			String commandID = UUID.randomUUID().toString();
-			
+
 			Map<String, Object> taskArguments = new HashMap<String, Object>();
 			taskArguments.put("content", task.getContent());
 			taskArguments.put("due", task.getDue());
@@ -226,7 +291,7 @@ public class WebApplicationController {
 
 	public ResponseEntity<String> sendCommands() {
 		ResponseEntity<String> result = null;
-		
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 		headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
@@ -282,8 +347,7 @@ public class WebApplicationController {
 		ArrayList<ICalendar> calendars;
 		ConspecProjectManager conspecPM = null;
 		ProjectFile project = null;
-		
-		
+
 		String configPath = "config.properties";
 		Properties projProperties = new Properties();
 		try {
@@ -296,8 +360,6 @@ public class WebApplicationController {
 		try {
 			conspecPM = new ConspecProjectManager(PROJECT_FILENAME);
 			project = conspecPM.getProjectFile();
-			String projectName = project.getTasks().get(1).getName();
-			System.out.println(projectName);
 		} catch (MPXJException e) {
 			message = "Main|Failed to read project: " + e;
 			System.out.println("Main|Failed to read project: " + e);
