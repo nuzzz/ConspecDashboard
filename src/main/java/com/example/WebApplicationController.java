@@ -1,9 +1,11 @@
 package com.example;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,10 +16,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
@@ -52,11 +59,17 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.PutObjectResult;
+import com.amazonaws.services.s3.transfer.TransferManager;
+import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
+import com.example.extensions.FileFormatException;
 import com.example.helper.AmazonS3ClientService;
 import com.example.model.Command;
 import com.example.model.Dog;
+import com.example.model.TodoistDue;
+import com.example.model.TodoistTask;
 import com.example.model.TodoistTempTask;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -64,7 +77,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
@@ -112,21 +128,13 @@ public class WebApplicationController {
 	private static final String RESPONSE_TYPE = "code";
 	private static final int MAX_COMMANDS = 25;
 
-    @Autowired
-    private AmazonS3ClientService amazonS3ClientService;
-	
-    @RequestMapping("/upload")
-    public String uploadPage() {
-        return "upload";
-    }
+	@Autowired
+	private AmazonS3ClientService amazonS3ClientService;
 
-    @RequestMapping(value = "/upload", method = RequestMethod.POST)
-    public String onUpload(MultipartFile file) {
-        //System.out.println(file.getOriginalFilename());
-        this.amazonS3ClientService.uploadFileToS3Bucket(file, true);
-        this.amazonS3ClientService.listAllFiles();
-        return "upload";
-    }
+	@RequestMapping("/upload")
+	public String upload() {
+		return "upload";
+	}
 
 //    @RequestMapping("uploadError")
 //    public ModelAndView onUploadError(HttpServletRequest request) {
@@ -135,88 +143,47 @@ public class WebApplicationController {
 //        return modelAndView;
 //    }
 
-
-    
 	@RequestMapping("/")
 	public String index(Map<String, Object> model) {
-		
-		//TODO: not implemented		
-		//uploadToS3();
-		//loadProjectData();
-		//readAndSaveTodoistProject();
-		//dailyUpdate(projectData);
-		
+
+		// TODO: not implemented
+		// uploadToS3();
+		loadProjectData();
+		// readAndSaveTodoistProject();
+		// dailyUpdate(projectData);
+
 		return "index";
-		//return "redirect:/upload";
 	}
-	
+
 	// upload file
 
 	// load all project tasks into memory with start and end date
 
-	
-//    @RequestMapping(value = "/", method = RequestMethod.POST)
-//    public Map<String, String> uploadFile(@RequestPart(value = "file") MultipartFile file)
-//    //public String uploadFile(@RequestPart(value = "file") MultipartFile file)
-//    {
-//        this.amazonS3ClientService.uploadFileToS3Bucket(file, true);
-//        
-//        Map<String, String> response = new HashMap<>();
-//        response.put("message", "file [" + file.getOriginalFilename() + "] uploading request submitted successfully.");
-//
-//        return response;
-//    }
-	
-//	@RequestMapping("/upload")
-//	String upload() {
-//		
-//		return "upload";
-//	}
-	
-//	private File convertMultiPartToFile(MultipartFile file) throws IOException {
-//	    File convFile = new File(file.getOriginalFilename());
-//	    FileOutputStream fos = new FileOutputStream(convFile);
-//	    fos.write(file.getBytes());
-//	    fos.close();
-//	    return convFile;
-//	}
-//	
-//	private String generateFileName(MultipartFile multiPart) {
-//	    return new Date().getTime() + "-" + multiPart.getOriginalFilename().replace(" ", "_");
-//	}
-//	
-//	private void uploadFileTos3bucket(String fileName, File file) {
-//		AWSCredentials credentials = new BasicAWSCredentials(
-//				  "AKIAYAMS47CA7A7CRO73", 
-//				  "ilsYe8gxWSnyLWrz3DvVHuzTR6Wvnyvw3BpAFTJ4"
-//				);
-//		
-//		AmazonS3 s3client = AmazonS3ClientBuilder
-//				  .standard()
-//				  .withCredentials(new AWSStaticCredentialsProvider(credentials))
-//				  .withRegion(Regions.AP_SOUTHEAST_1)
-//				  .build();
-//		
-//	    s3client.putObject(new PutObjectRequest("com.conspec", fileName, file)
-//	            .withCannedAcl(CannedAccessControlList.PublicReadWrite));
-//	}
-//	
-//	public String uploadFile(MultipartFile multipartFile) {
-//
-//	    String fileUrl = "";
-//	    try {
-//	        File file = convertMultiPartToFile(multipartFile);
-//	        String fileName = generateFileName(multipartFile);
-//	        fileUrl = "https://s3.ap-southeast-1.amazonaws.com" + "/" + "com.conspec" + "/" + fileName;
-//	        uploadFileTos3bucket(fileName, file);
-//	        file.delete();
-//	    } catch (Exception e) {
-//	       e.printStackTrace();
-//	    }
-//	    return fileUrl;
-//	}
-	
+//  @RequestMapping(value = "/upload", method = RequestMethod.POST)
+//  public String onUpload(MultipartFile file) {
+//      //System.out.println(file.getOriginalFilename());
+//      this.amazonS3ClientService.uploadFileToS3Bucket(file, true);
+//      this.amazonS3ClientService.listAllFiles();
+//      return "upload";
+//  }
+
+	@RequestMapping(value = "/upload", method = RequestMethod.POST)
+	public Map<String, String> uploadFile(@RequestPart(value = "file") MultipartFile file) {
+		Map<String, String> response = new HashMap<>();
+		try {
+			this.amazonS3ClientService.uploadFileToS3Bucket(file, true);
+			response.put("message",
+					"file [" + file.getOriginalFilename() + "] uploading request submitted successfully.");
+		} catch (FileFormatException e) {
+			response.put("message", "Error file needs to be Microsoft Project type (.mpp)");
+		}
+
+		return response;
+	}
+
 	public void loadProjectData() {
+		Map<String, Long> tempToRealID = new HashMap<>();
+
 		// Login //TODO: Unimplemented login
 
 		// get time now
@@ -226,28 +193,150 @@ public class WebApplicationController {
 		ProjectFile projectData = initProjectStuff();
 
 		// save projectid to memory
-		
+
 		long projectID = createProject(projectData.getTasks().get(1).getName(), dateNow);
 
 		todoistService.clearCommands();
 
-		List<TodoistTempTask> taskList = todoistService.createTempTaskList(projectData, projectID, dateNow);
-
-		List<List<TodoistTempTask>> taskListSplitByMax = Lists.partition(taskList, MAX_COMMANDS);
+		List<TodoistTempTask> taskList = todoistService.createTempTaskList(projectData, projectID);
+		List<TodoistTempTask> taskListTillCurrentDate = todoistService.tillDateFilter(taskList,LocalDate.now());
+		
+		List<List<TodoistTempTask>> taskListSplitByMax = Lists.partition(taskListTillCurrentDate, MAX_COMMANDS);
 
 		// TODO:
 		// 1. On failure,
 		// 2. If task already exist,
 
+		// Store temptasklist into tempToRealID map (current only) [scheduled have no permanent id]
 		for (List<TodoistTempTask> currentTaskList : taskListSplitByMax) {
-			createTempTasks(currentTaskList);
+			ResponseEntity<String> result = createTempTasks(currentTaskList);
+			Map<String, Long> splitTaskIdMap = saveTaskIdFrom(result.getBody());
+			tempToRealID.putAll(splitTaskIdMap);
 			todoistService.clearCommands();
 		}
+
+		List<TodoistTask> createdTasks = createTodoistTaskList(taskListTillCurrentDate, tempToRealID);
+		
+		// Store scheduled into memory ensure it contains date => temp task mapping
+		List<TodoistTempTask> scheduledTaskList = getScheduledTasks(taskList, tempToRealID);
+		Map<LocalDate, List<TodoistTempTask>> scheduledTaskMap = scheduledTaskList.stream().collect(Collectors.groupingBy(TodoistTempTask::getStartDate));
+		
+		String jsonStr="";
+		
+		try {
+			jsonStr = new ObjectMapper().writeValueAsString(scheduledTaskMap);
+			//TODO: This is not working now 
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		//	this.amazonS3ClientService.saveJsonTo("ScheduledTasks/scheduledTaskMap.json" , jsonStr, true);
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		//save json to file scheduledTaskMap.json
+		File newFile = new File("scheduledTaskMap.json");
+		try {
+			Files.write(jsonStr.getBytes(), newFile);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		String location = "ScheduledTasks/scheduledTaskMap.json";
+		amazonS3ClientService.putFile(location, newFile);
+		
+//		S3Object s3object = s3client.getObject(bucketName, "picture/pic.png");
+//		S3ObjectInputStream inputStream = s3object.getObjectContent();
+//		FileUtils.copyInputStreamToFile(inputStream, new File("/Users/user/Desktop/hello.txt"));
+		String filepath = "ScheduledTasks/scheduledTaskMap.json";
+		try {
+			String jsonStr2 = amazonS3ClientService.openFileAndGetJsonString(filepath);
+			ObjectMapper mapper = new ObjectMapper();
+			Map<LocalDate, List<TodoistTempTask>> map = mapper.readValue(jsonStr2, Map.class);
+			System.out.println(map.values());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		// Create loadScheduledTasks(scheduledtasklist,currentdate) and save new
+		
+		//loadScheduledTasks(scheduledTasks, LocalDate.now());
+		// scheduled tasks
+
+		// save user added tasks
+
+		// OPTIONAL: redesign ui
+	}
+
+	private void loadScheduledTasks(List<TodoistTempTask> scheduledTasks, LocalDate now) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public List<TodoistTask> createTodoistTaskList(List<TodoistTempTask> tempTasks, Map<String, Long> tempToRealID) {
+		List<TodoistTask> createdTasks = new ArrayList<>();
+
+		for (TodoistTempTask task : tempTasks) {
+
+			if (tempToRealID.containsKey(task.getTemp_id())) {
+				TodoistTask newPermanentTask = new TodoistTask(tempToRealID.get(task.getTemp_id()), task.getTemp_id(),
+						task.getData_id(), task.getContent(), task.getProject_id(), task.getStartDate(),
+						task.getEndDate(), task.getDue(), task.getPriority(), task.getLabels());
+
+				createdTasks.add(newPermanentTask);
+			}
+
+		}
+		return createdTasks;
+	}
+
+	public List<TodoistTempTask> getScheduledTasks(List<TodoistTempTask> tempTasks, Map<String, Long> tempToRealID) {
+		List<TodoistTempTask> scheduledTasks = new ArrayList<>();
+		
+		for( TodoistTempTask task : tempTasks ) {
+			if(!tempToRealID.containsKey(task.getTemp_id())){
+				scheduledTasks.add(task);
+			}
+				
+		}
+		return scheduledTasks;
+	}
+
+	public Map<String, Long> saveTaskIdFrom(String jsonString) {
+		Map<String, Long> tempToRealID = new HashMap<>();
+
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			JsonNode rootNode = mapper.readTree(jsonString);
+			JsonNode temp_id_mapping = rootNode.get("temp_id_mapping");
+
+			Iterator<Entry<String, JsonNode>> iter = temp_id_mapping.fields();
+			while (iter.hasNext()) {
+				Map.Entry<String, JsonNode> field = iter.next();
+				String temp_id = field.getKey();
+				Long real_id = field.getValue().asLong();
+
+				tempToRealID.put(temp_id, real_id);
+			}
+
+			// temp_id_mapping.forEach(data);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return tempToRealID;
+	}
+
+	public void showProjects() {
+		this.amazonS3ClientService.listAllProjects();
 	}
 
 	// This returns a long project id only if the command was successful
 	public long createProject(String projectName, LocalDate dateNow) {
-		String projectTempId = todoistService.createTodoistProject( projectName + " " + dateNow.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+		String projectTempId = todoistService
+				.createTodoistProject(projectName + " " + dateNow.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
 
 		ResponseEntity<String> result = sendCommands();
 
@@ -410,7 +499,6 @@ public class WebApplicationController {
 		// create ObjectMapper instance
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
 		// convert json string to object
 		Dog doggo;
 		try {
@@ -553,5 +641,4 @@ public class WebApplicationController {
 			return new HikariDataSource(config);
 		}
 	}
-
 }

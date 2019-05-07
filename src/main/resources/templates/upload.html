@@ -2,34 +2,19 @@
 <html xmlns:th="http://www.thymeleaf.org"
 	th:replace="~{fragments/layout :: layout (~{::body},'upload')}">
 <body>
-	<div style="color: red" th:text="${error}" th:if="${error}">
-		Error during upload</div>
-	<div>
-	
-	
-		Testing upload
-		<form th:action="@{/upload}" method="post" enctype="multipart/form-data">
-
-			<input type="file" id="file" name="file" />
-			<button type="submit" name="save">Submit</button>
+	<div class="jumbotron text-left">
+		<h1 class="display-4">File upload</h1>
+		
+		<form action="/upload" method="post" enctype="multipart/form-data">
+		<input name="file" type="file" class="file"
+			data-browse-on-zone-click="true">
+    <br/>
+		<br/>
+		<button action="submit">Submit</button>
 		</form>
-
-		<!-- 		<form method="POST" action="/" -->
-		<!-- 			enctype="multipart/form-data"> -->
-		<!-- 			<table> -->
-		<!-- 				<tr> -->
-		<!-- 					<td>File to upload:</td> -->
-		<!-- 					<td><input type="file" name="file" /></td> -->
-		<!-- 				</tr> -->
-		<!-- 				<tr> -->
-		<!-- 					<td></td> -->
-		<!-- 					<td><input type="submit" value="Upload" /></td> -->
-		<!-- 				</tr> -->
-		<!-- 			</table> -->
-		<!-- 		</form> -->
+		<p th:if=${message} th:text="${message}"></p>
 	</div>
-
-	<p th:text="${message}">Request message</p>
+	
 </body>
 </body>
 </html>

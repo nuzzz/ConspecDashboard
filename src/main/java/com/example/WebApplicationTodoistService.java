@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -114,8 +115,8 @@ public class WebApplicationTodoistService implements TodoistService {
 
 		return newTask;
 	}
-
-	public List<TodoistTempTask> createTempTaskList(ProjectFile projectData, long projectID, LocalDate currentDate) {
+	
+	public List<TodoistTempTask> createTempTaskList(ProjectFile projectData, long projectID) {
 		List<TodoistTempTask> todoistTempTasks = new ArrayList<TodoistTempTask>();
 
 		assignTempIdAndChildOrder(projectData);
@@ -126,15 +127,17 @@ public class WebApplicationTodoistService implements TodoistService {
 			// 1. If task name does not contain milestone
 			// 2. If task is root task
 			if (!task.getName().contains("Milestone") && task.getParentTask() != null) {
-				if(!task.getStart().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().isAfter(currentDate)) {
-					todoistTempTasks.add(createTodoistTempTask(task, projectID));
-				}else {
-					
-				}
+				todoistTempTasks.add(createTodoistTempTask(task, projectID));
 			}
 		}
 		return todoistTempTasks;
 	}
+	
+	public List<TodoistTempTask> tillDateFilter(List<TodoistTempTask> taskList, LocalDate date) {
+		List<TodoistTempTask> filteredTasks = taskList.stream().filter(task -> !task.getStartDate().isAfter(date)).collect(Collectors.toList());
+		return filteredTasks;
+	}
+	
 
 	
 	// Iterate thru all tasks assign do the following: 

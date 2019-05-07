@@ -6,7 +6,6 @@ import java.util.Set;
 
 public class TodoistTempTask {
 	//task identifiers
-	private long id;
 	private String temp_id;
 	
 	//task data
@@ -35,7 +34,6 @@ public class TodoistTempTask {
 	public TodoistTempTask(String temp_id, Integer data_id, String content, long project_id,
 						LocalDate startDate, LocalDate endDate, TodoistDue due, 
 						int priority, Set<Integer> labels) {
-		this.id = id;
 		this.temp_id = temp_id;
 		this.data_id = data_id;
 		this.content = content;
@@ -47,15 +45,6 @@ public class TodoistTempTask {
 		
 		this.priority = priority;
 		this.labels = labels;
-	}
-
-
-	public long getId() {
-		return id;
-	}
-
-	public void setId(long id) {
-		this.id = id;
 	}
 
 	public String getTemp_id() {
