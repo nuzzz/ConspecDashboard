@@ -5,6 +5,10 @@ public class TodoistDue {
 	private String datetime;
 	private String string;
 	private String timezone;
+	
+	public TodoistDue() {
+		
+	}
 	public TodoistDue(String date, String datetime, String string, String timezone) {
 		this.date = date;
 		this.datetime = datetime;

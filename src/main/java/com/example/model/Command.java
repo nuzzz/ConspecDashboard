@@ -9,6 +9,10 @@ public class Command {
 	private String temp_id;
 	private Map<String, Object> args;
 	
+	public Command() {
+		
+	}
+	
 	public Command(String type, String uuid, String temp_id, Map<String, Object> args) {
 		this.type = type;
 		this.uuid = uuid;

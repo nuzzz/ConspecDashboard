@@ -31,6 +31,10 @@ public class TodoistTempTask {
 	private boolean auto_reminder; // When this option is enabled, the default reminder will be added to the new item if it has a due date with time set. See also the auto_reminder user option for more info about the default reminder.
 	private boolean auto_parse_labels; //When this option is enabled, the labels will be parsed from the task content and added to the task. In case the label doesn’t exist, a new one will be created. 
 	
+	public TodoistTempTask() {
+		
+	}
+	
 	public TodoistTempTask(String temp_id, Integer data_id, String content, long project_id,
 						LocalDate startDate, LocalDate endDate, TodoistDue due, 
 						int priority, Set<Integer> labels) {
