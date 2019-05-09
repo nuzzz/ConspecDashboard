@@ -26,18 +26,28 @@
 		<junit.jupiter.version>5.4.1</junit.jupiter.version>
 		<jackson.version>2.9.8</jackson.version>
 		<spring-security.version>5.0.6.RELEASE</spring-security.version>
+		<amazonaws.version>1.11.547</amazonaws.version>
+		<okhttp.version>3.14.1</okhttp.version>
+		<google-guava.version>27.1-jre</google-guava.version>
 	</properties>
 
 	<dependencies>
+		<!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-s3 -->
 		<dependency>
 			<groupId>com.amazonaws</groupId>
-			<artifactId>aws-java-sdk</artifactId>
-			<version>1.11.545</version>
+			<artifactId>aws-java-sdk-s3</artifactId>
+			<version>${amazonaws.version}</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-core -->
+		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-core</artifactId>
+			<version>${amazonaws.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.squareup.okhttp3</groupId>
 			<artifactId>okhttp</artifactId>
-			<version>3.14.1</version>
+			<version>${okhttp.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.microsoft.graph</groupId>
@@ -69,7 +79,7 @@
 		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
-			<version>27.1-jre</version>
+			<version>${google-guava.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jscience</groupId>

@@ -24,6 +24,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
@@ -38,6 +39,8 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -77,6 +80,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -93,10 +98,11 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 @Controller
-@ComponentScan(basePackages = { "com.example" })
+@EnableScheduling
 public class WebApplicationController {
 
-	private final WebApplicationStorageService storageService;
+	private final static Logger LOGGER = Logger.getLogger(WebApplicationController.class.getName());
+
 	private final WebApplicationTodoistService todoistService;
 
 	@Autowired
@@ -112,9 +118,7 @@ public class WebApplicationController {
 	private RestTemplate restTemplate;
 
 	@Autowired
-	public WebApplicationController(WebApplicationStorageService storageService,
-			WebApplicationTodoistService todoistService) {
-		this.storageService = storageService;
+	public WebApplicationController(WebApplicationTodoistService todoistService) {
 		this.todoistService = todoistService;
 	}
 
@@ -127,6 +131,8 @@ public class WebApplicationController {
 	private static final String SCOPE = "data:read_write";// data:read //data:read_write
 	private static final String RESPONSE_TYPE = "code";
 	private static final int MAX_COMMANDS = 25;
+	private static final String SCHEDULED_TASK_FILENAME = "scheduledTaskList.json";
+	private static final String SCHEDULED_TASK_S3_LOCATION = "ScheduledTasks/scheduledTaskList.json";
 
 	@Autowired
 	private AmazonS3ClientService amazonS3ClientService;
@@ -143,29 +149,32 @@ public class WebApplicationController {
 //        return modelAndView;
 //    }
 
-	@RequestMapping("/")
-	public String index(Map<String, Object> model) {
-
+	@RequestMapping("/loadproject")
+	public String loadproject(Map<String, Object> model) {
 		// TODO: not implemented
 		// uploadToS3();
 		loadProjectData();
-		// readAndSaveTodoistProject();
-		// dailyUpdate(projectData);
+		// runScheduler
+
+		return "loadproject";
+	}
+
+//	@Scheduled(cron = "0 0 14 * * *") // use if running on heroku UTC + 8 [6am UTC+8]
+	@RequestMapping("/runschedule")
+	public String index(Map<String, Object> model) {
+		// TODO: not implemented
+		// uploadToS3();
+		// loadProjectData();
+		ResponseEntity<String> result = runProjectScheduledTaskManager();
+		model.put("message", result.getBody());
+		return "runschedule";
+	}
+
+	@RequestMapping("/")
+	public String runProjectTaskManager(Map<String, Object> model) {
 
 		return "index";
 	}
-
-	// upload file
-
-	// load all project tasks into memory with start and end date
-
-//  @RequestMapping(value = "/upload", method = RequestMethod.POST)
-//  public String onUpload(MultipartFile file) {
-//      //System.out.println(file.getOriginalFilename());
-//      this.amazonS3ClientService.uploadFileToS3Bucket(file, true);
-//      this.amazonS3ClientService.listAllFiles();
-//      return "upload";
-//  }
 
 	@RequestMapping(value = "/upload", method = RequestMethod.POST)
 	public Map<String, String> uploadFile(@RequestPart(value = "file") MultipartFile file) {
@@ -181,12 +190,12 @@ public class WebApplicationController {
 		return response;
 	}
 
+	// This function should run on button click of projectname depending on file
+	// uploaded to file directory in s3.
 	public void loadProjectData() {
 		Map<String, Long> tempToRealID = new HashMap<>();
 
 		// Login //TODO: Unimplemented login
-
-		// get time now
 		LocalDate dateNow = LocalDate.now();
 
 		// create project in todoist
@@ -199,15 +208,16 @@ public class WebApplicationController {
 		todoistService.clearCommands();
 
 		List<TodoistTempTask> taskList = todoistService.createTempTaskList(projectData, projectID);
-		List<TodoistTempTask> taskListTillCurrentDate = todoistService.tillDateFilter(taskList,LocalDate.now());
-		
+		List<TodoistTempTask> taskListTillCurrentDate = todoistService.tillDateFilter(taskList, LocalDate.now());
+
 		List<List<TodoistTempTask>> taskListSplitByMax = Lists.partition(taskListTillCurrentDate, MAX_COMMANDS);
 
 		// TODO:
 		// 1. On failure,
 		// 2. If task already exist,
 
-		// Store temptasklist into tempToRealID map (current only) [scheduled have no permanent id]
+		// Store temptasklist into tempToRealID map (current only) [scheduled have no
+		// permanent id]
 		for (List<TodoistTempTask> currentTaskList : taskListSplitByMax) {
 			ResponseEntity<String> result = createTempTasks(currentTaskList);
 			Map<String, Long> splitTaskIdMap = saveTaskIdFrom(result.getBody());
@@ -216,63 +226,53 @@ public class WebApplicationController {
 		}
 
 		List<TodoistTask> createdTasks = createTodoistTaskList(taskListTillCurrentDate, tempToRealID);
-		
+
 		// Store scheduled into memory ensure it contains date => temp task mapping
 		List<TodoistTempTask> scheduledTaskList = getScheduledTasks(taskList, tempToRealID);
-		Map<LocalDate, List<TodoistTempTask>> scheduledTaskMap = scheduledTaskList.stream().collect(Collectors.groupingBy(TodoistTempTask::getStartDate));
-		
-		String jsonStr="";
-		
+
 		try {
-			jsonStr = new ObjectMapper().writeValueAsString(scheduledTaskMap);
-			//TODO: This is not working now 
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-		//	this.amazonS3ClientService.saveJsonTo("ScheduledTasks/scheduledTaskMap.json" , jsonStr, true);
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.registerModule(new JavaTimeModule());
+			mapper.writerWithDefaultPrettyPrinter();
+			String jsonStr = mapper.writeValueAsString(scheduledTaskList);
+			File newFile = new File(SCHEDULED_TASK_FILENAME);
+			Files.write(jsonStr.getBytes(), newFile);
+			amazonS3ClientService.putFile(SCHEDULED_TASK_S3_LOCATION, newFile);
 		} catch (JsonProcessingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
-		
-		//save json to file scheduledTaskMap.json
-		File newFile = new File("scheduledTaskMap.json");
-		try {
-			Files.write(jsonStr.getBytes(), newFile);
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		String location = "ScheduledTasks/scheduledTaskMap.json";
-		amazonS3ClientService.putFile(location, newFile);
-		
-//		S3Object s3object = s3client.getObject(bucketName, "picture/pic.png");
-//		S3ObjectInputStream inputStream = s3object.getObjectContent();
-//		FileUtils.copyInputStreamToFile(inputStream, new File("/Users/user/Desktop/hello.txt"));
-		String filepath = "ScheduledTasks/scheduledTaskMap.json";
-		try {
-			String jsonStr2 = amazonS3ClientService.openFileAndGetJsonString(filepath);
-			ObjectMapper mapper = new ObjectMapper();
-			Map<LocalDate, List<TodoistTempTask>> map = mapper.readValue(jsonStr2, Map.class);
-			System.out.println(map.values());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-
-		// Create loadScheduledTasks(scheduledtasklist,currentdate) and save new
-		
-		//loadScheduledTasks(scheduledTasks, LocalDate.now());
-		// scheduled tasks
-
-		// save user added tasks
-
-		// OPTIONAL: redesign ui
 	}
 
-	private void loadScheduledTasks(List<TodoistTempTask> scheduledTasks, LocalDate now) {
-		// TODO Auto-generated method stub
-		
-	}
+	// 1. Load taskList from s3
+	// 2. See if tasks fall on today.
+	// 3. Add task if it falls on today.
+	// 4. Edit taskList and save
+	// *5. scan for new tasks
+	// *6. save new tasks
+//	//@Scheduled(cron = "0 0 6 * * *") // use if running locally [6am local time] 
+//	@Scheduled(cron = "0 0 14 * * *")// use if running on heroku UTC + 8 [6am UTC+8]
+//	private void loadScheduledTasks() {
+//		// load temp tasks from s3
+//		List<TodoistTempTask> scheduledTaskList = new ArrayList<>();// amazonS3ClientService.openFileAndGetJsonString("ScheduledTasks/scheduledTaskList.json");
+//		
+//		
+//		
+//		// add tasks which are scheduled for today
+//		List<TodoistTempTask> todayTaskList = new ArrayList<>(); 
+//		for(TodoistTempTask task : scheduledTaskList) {
+//			
+//			if(!task.getStartDate().isAfter(LocalDate.now())){
+//				todayTaskList.add(task);
+//			}
+//			
+//			ResponseEntity<String> result = createTempTasks(todayTaskList);
+//			todoistService.clearCommands();
+//		}
+//	}
 
 	public List<TodoistTask> createTodoistTaskList(List<TodoistTempTask> tempTasks, Map<String, Long> tempToRealID) {
 		List<TodoistTask> createdTasks = new ArrayList<>();
@@ -293,12 +293,12 @@ public class WebApplicationController {
 
 	public List<TodoistTempTask> getScheduledTasks(List<TodoistTempTask> tempTasks, Map<String, Long> tempToRealID) {
 		List<TodoistTempTask> scheduledTasks = new ArrayList<>();
-		
-		for( TodoistTempTask task : tempTasks ) {
-			if(!tempToRealID.containsKey(task.getTemp_id())){
+
+		for (TodoistTempTask task : tempTasks) {
+			if (!tempToRealID.containsKey(task.getTemp_id())) {
 				scheduledTasks.add(task);
 			}
-				
+
 		}
 		return scheduledTasks;
 	}
@@ -641,4 +641,79 @@ public class WebApplicationController {
 			return new HikariDataSource(config);
 		}
 	}
+
+	/******************************************************************************************************
+	 * ScheduledTasks code begins here
+	 * 
+	 * @return
+	 ******************************************************************************************************/
+
+	public ResponseEntity<String> runProjectScheduledTaskManager() {
+		String jsonString = amazonS3ClientService.getJsonStringFromS3(SCHEDULED_TASK_S3_LOCATION);
+		ResponseEntity<String> result = null;
+		if (!jsonString.equals("[]")) {
+			// Put tasks into taskList
+			List<TodoistTempTask> scheduledTaskList = new ArrayList<>();
+			LocalDate currentDate = LocalDate.now();
+			try {
+				scheduledTaskList = jsonArrayToObjectList(jsonString, TodoistTempTask.class);
+			} catch (IOException error) {
+				LOGGER.severe("IO Exception occurred: " + error);
+			}
+
+			// Collect tasks to be added.
+			ArrayList<TodoistTempTask> addTheseTasks = new ArrayList<>();
+			int taskCount = 0;
+			for (TodoistTempTask task : scheduledTaskList) {
+				if (!task.getStartDate().isAfter(currentDate)) {
+					addTheseTasks.add(task);
+					taskCount++;
+				}
+			}
+			// remove added tasks from scheduled tasks
+			scheduledTaskList.removeAll(addTheseTasks);
+
+			// reupload to s3 removed task list back into scheduled
+			uploadTasklistToS3(scheduledTaskList);
+
+			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+			LOGGER.info("added " + taskCount + " tasks on " + currentDate.format(dtf));
+			todoistService.addTasksToTodoist(addTheseTasks);
+			result = sendCommands();
+		} else {
+			LOGGER.info("No tasks added because jsonString is empty");
+		}
+
+		return result;
+	}
+
+	public void uploadTasklistToS3(List<TodoistTempTask> taskList) {
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			mapper.registerModule(new JavaTimeModule());
+			mapper.writerWithDefaultPrettyPrinter();
+			String jsonStr = mapper.writeValueAsString(taskList);
+			File newFile = new File(SCHEDULED_TASK_FILENAME);
+			Files.write(jsonStr.getBytes(), newFile);
+			amazonS3ClientService.putFile(SCHEDULED_TASK_S3_LOCATION, newFile);
+			newFile.delete();
+		} catch (JsonProcessingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	} // uploadToS3
+
+	// Credits: https://stackoverflow.com/a/46233446
+	private <T> List<T> jsonArrayToObjectList(String json, Class<T> tClass) throws IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.registerModule(new JavaTimeModule());
+		CollectionType listType = mapper.getTypeFactory().constructCollectionType(ArrayList.class, tClass);
+		List<T> ts = mapper.readValue(json, listType);
+		LOGGER.fine("class name: " + ts.get(0).getClass().getName());
+		return ts;
+	} // jsonArrayToObjectList
+
 }

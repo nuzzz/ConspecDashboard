@@ -3,6 +3,9 @@ package com.example;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +33,7 @@ import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.example.extensions.FileFormatException;
 import com.example.helper.AmazonS3ClientService;
+import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 
 @Component
@@ -56,8 +60,7 @@ public class WebApplicationAmazonS3ClientService implements AmazonS3ClientServic
 
 		this.amazonS3.putObject(putObjectRequest);
 	}
-	
-	
+
 	@Async
 	public void listAllProjects() {
 		ObjectListing objectListing = amazonS3.listObjects(awsS3ConspecBucket);
@@ -130,7 +133,7 @@ public class WebApplicationAmazonS3ClientService implements AmazonS3ClientServic
 	@Override
 	public void listAllFiles() {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
@@ -145,15 +148,36 @@ public class WebApplicationAmazonS3ClientService implements AmazonS3ClientServic
 		String jsonString = "";
 		try {
 			jsonString = StreamUtils.copyToString(inputStream, StandardCharsets.UTF_8);
-			
+
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} finally {
-			if(s3object!=null){
+			if (s3object != null) {
 				s3object.close();
 			}
 		}
 		return jsonString;
 	}
+
+	@Override
+	public String getJsonStringFromS3(String taskListLocation) {
+		String jsonString = "";
+		ObjectListing objectListing = amazonS3.listObjects(awsS3ConspecBucket);
+		for (S3ObjectSummary os : objectListing.getObjectSummaries()) {
+			if (os.getKey().equals(taskListLocation)) {
+				// get the file
+				InputStream inputStream = amazonS3.getObject(awsS3ConspecBucket, taskListLocation).getObjectContent();
+
+				try (final Reader reader = new InputStreamReader(inputStream)) {
+					jsonString = CharStreams.toString(reader);
+				} catch (IOException error) {
+					logger.error("IO Exception occured: " + error);
+				}
+			} else {
+				logger.debug("No task list found. Exiting loop...");
+			}
+		}
+		return jsonString;
+	} // getJsonDataFromS3
 }

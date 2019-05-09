@@ -1,5 +1,7 @@
 package com.example.helper;
 
+import java.util.ArrayList;
+
 import com.example.model.TodoistTask;
 import com.example.model.TodoistTempTask;
 
@@ -13,4 +15,6 @@ public interface TodoistService {
 	String createTodoistProject(String projectName);
 		
 	TodoistTempTask createTodoistTempTask(Task task, long project_id);
+
+	void addTasksToTodoist(ArrayList<TodoistTempTask> addTheseTasks);
 }
