@@ -1,11 +1,8 @@
 package com.example;
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,38 +11,29 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.Set;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.sql.DataSource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -55,23 +43,10 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import com.amazonaws.auth.AWSCredentials;
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
-import com.amazonaws.services.s3.model.CannedAccessControlList;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
-import com.amazonaws.services.s3.model.PutObjectResult;
-import com.amazonaws.services.s3.transfer.TransferManager;
-import com.amazonaws.services.s3.transfer.TransferManagerBuilder;
 import com.example.extensions.FileFormatException;
 import com.example.helper.AmazonS3ClientService;
 import com.example.model.Command;
 import com.example.model.Dog;
-import com.example.model.TodoistDue;
 import com.example.model.TodoistTask;
 import com.example.model.TodoistTempTask;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -82,8 +57,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 import com.zaxxer.hikari.HikariConfig;
@@ -104,7 +77,7 @@ public class WebApplicationController {
 	private final static Logger LOGGER = Logger.getLogger(WebApplicationController.class.getName());
 
 	private final WebApplicationTodoistService todoistService;
-
+	private final AmazonS3ClientService amazonS3ClientService;
 	@Autowired
 	private DataSource dataSource;
 
@@ -116,38 +89,28 @@ public class WebApplicationController {
 
 	@Autowired
 	private RestTemplate restTemplate;
-
+	
 	@Autowired
-	public WebApplicationController(WebApplicationTodoistService todoistService) {
+	public WebApplicationController(WebApplicationTodoistService todoistService, AmazonS3ClientService amazonS3ClientService) {
 		this.todoistService = todoistService;
+		this.amazonS3ClientService = amazonS3ClientService;
 	}
 
-	public String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
 
-	private static final String API_URL = "https://todoist.com/api/v8/sync";
-	private static final String API_AUTH = "https://todoist.com/oauth/authorize";
-	private static final String API_TOKEN = "https://todoist.com/oauth/access_token";
-	private static final String WEB_REDIRECT = "http://localhost:5000/callback";
 	private static final String SCOPE = "data:read_write";// data:read //data:read_write
 	private static final String RESPONSE_TYPE = "code";
 	private static final int MAX_COMMANDS = 25;
 	private static final String SCHEDULED_TASK_FILENAME = "scheduledTaskList.json";
 	private static final String SCHEDULED_TASK_S3_LOCATION = "ScheduledTasks/scheduledTaskList.json";
 
-	@Autowired
-	private AmazonS3ClientService amazonS3ClientService;
+
 
 	@RequestMapping("/upload")
 	public String upload() {
 		return "upload";
 	}
 
-//    @RequestMapping("uploadError")
-//    public ModelAndView onUploadError(HttpServletRequest request) {
-//        ModelAndView modelAndView = new ModelAndView("uploadPage");
-//        modelAndView.addObject("error", request.getAttribute(WebUtils.ERROR_MESSAGE_ATTRIBUTE));
-//        return modelAndView;
-//    }
+
 
 	@RequestMapping("/loadproject")
 	public String loadproject(Map<String, Object> model) {
@@ -238,6 +201,7 @@ public class WebApplicationController {
 			File newFile = new File(SCHEDULED_TASK_FILENAME);
 			Files.write(jsonStr.getBytes(), newFile);
 			amazonS3ClientService.putFile(SCHEDULED_TASK_S3_LOCATION, newFile);
+			newFile.delete();
 		} catch (JsonProcessingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

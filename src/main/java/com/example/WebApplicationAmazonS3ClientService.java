@@ -20,7 +20,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.amazonaws.AmazonServiceException;
 import com.amazonaws.auth.AWSCredentialsProvider;
+import com.amazonaws.auth.AWSStaticCredentialsProvider;
+import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Region;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -38,21 +41,23 @@ import com.google.common.io.Files;
 
 @Component
 public class WebApplicationAmazonS3ClientService implements AmazonS3ClientService {
-	private String awsS3ConspecBucket;
 	private AmazonS3 amazonS3;
 	private static final Logger logger = LoggerFactory.getLogger(WebApplicationAmazonS3ClientService.class);
-
+	
+	private String awsBucket;
 	@Autowired
-	public WebApplicationAmazonS3ClientService(Region awsRegion, AWSCredentialsProvider awsCredentialsProvider,
-			String awsS3ConspecBucket) {
-		this.amazonS3 = AmazonS3ClientBuilder.standard().withCredentials(awsCredentialsProvider)
-				.withRegion(awsRegion.getName()).build();
-		this.awsS3ConspecBucket = awsS3ConspecBucket;
+	public WebApplicationAmazonS3ClientService(Region awsRegion, String awsBucket, AWSCredentialsProvider awsCredentialsProvider) {
+		this.amazonS3 = AmazonS3ClientBuilder.standard()
+				.withCredentials(awsCredentialsProvider)
+				.withRegion(awsRegion.getName())
+				.build();
+		this.awsBucket = awsBucket;
 	}
+
 
 	@Async
 	public void saveJsonTo(String content, String location, boolean enablePublicReadAccess) {
-		PutObjectRequest putObjectRequest = new PutObjectRequest(this.awsS3ConspecBucket, location, content);
+		PutObjectRequest putObjectRequest = new PutObjectRequest(this.awsBucket, location, content);
 
 		if (enablePublicReadAccess) {
 			putObjectRequest.withCannedAcl(CannedAccessControlList.PublicRead);
@@ -63,7 +68,7 @@ public class WebApplicationAmazonS3ClientService implements AmazonS3ClientServic
 
 	@Async
 	public void listAllProjects() {
-		ObjectListing objectListing = amazonS3.listObjects(awsS3ConspecBucket);
+		ObjectListing objectListing = amazonS3.listObjects(awsBucket);
 		for (S3ObjectSummary os : objectListing.getObjectSummaries()) {
 			System.out.println(os.getKey());
 		}
@@ -106,7 +111,7 @@ public class WebApplicationAmazonS3ClientService implements AmazonS3ClientServic
 				fos.write(multipartFile.getBytes());
 				fos.close();
 
-				PutObjectRequest putObjectRequest = new PutObjectRequest(this.awsS3ConspecBucket, finalFileName, file);
+				PutObjectRequest putObjectRequest = new PutObjectRequest(this.awsBucket, finalFileName, file);
 
 				if (enablePublicReadAccess) {
 					putObjectRequest.withCannedAcl(CannedAccessControlList.PublicRead);
@@ -124,7 +129,7 @@ public class WebApplicationAmazonS3ClientService implements AmazonS3ClientServic
 	@Async
 	public void deleteFileFromS3Bucket(String fileName) {
 		try {
-			amazonS3.deleteObject(new DeleteObjectRequest(awsS3ConspecBucket, fileName));
+			amazonS3.deleteObject(new DeleteObjectRequest(this.awsBucket, fileName));
 		} catch (AmazonServiceException ex) {
 			logger.error("error [" + ex.getMessage() + "] occurred while removing [" + fileName + "] ");
 		}
@@ -138,12 +143,12 @@ public class WebApplicationAmazonS3ClientService implements AmazonS3ClientServic
 
 	@Override
 	public void putFile(String location, File file) {
-		this.amazonS3.putObject(awsS3ConspecBucket, location, file);
+		this.amazonS3.putObject(this.awsBucket, location, file);
 	}
 
 	@Override
 	public String openFileAndGetJsonString(String filepath) throws IOException {
-		S3Object s3object = amazonS3.getObject(awsS3ConspecBucket, filepath);
+		S3Object s3object = amazonS3.getObject(this.awsBucket, filepath);
 		S3ObjectInputStream inputStream = s3object.getObjectContent();
 		String jsonString = "";
 		try {
@@ -163,11 +168,11 @@ public class WebApplicationAmazonS3ClientService implements AmazonS3ClientServic
 	@Override
 	public String getJsonStringFromS3(String taskListLocation) {
 		String jsonString = "";
-		ObjectListing objectListing = amazonS3.listObjects(awsS3ConspecBucket);
+		ObjectListing objectListing = amazonS3.listObjects(this.awsBucket);
 		for (S3ObjectSummary os : objectListing.getObjectSummaries()) {
 			if (os.getKey().equals(taskListLocation)) {
 				// get the file
-				InputStream inputStream = amazonS3.getObject(awsS3ConspecBucket, taskListLocation).getObjectContent();
+				InputStream inputStream = amazonS3.getObject(this.awsBucket, taskListLocation).getObjectContent();
 
 				try (final Reader reader = new InputStreamReader(inputStream)) {
 					jsonString = CharStreams.toString(reader);

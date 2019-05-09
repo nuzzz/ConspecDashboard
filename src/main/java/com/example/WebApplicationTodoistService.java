@@ -35,9 +35,6 @@ import okhttp3.Response;
 public class WebApplicationTodoistService implements TodoistService {
 	
 	private static final Logger logger = LoggerFactory.getLogger(WebApplicationTodoistService.class);
-	String cid = "a0926c2f533a448bb14213e5bae8a964";
-	String csecret = "3534a321bc474ce18ee8134aae2720f1";
-	String ACCESS_TOKEN = "3a440b1a6f41b620823baa09a044c63771ff5809";
 
 	// set on init
 	private String client_id;
@@ -64,14 +61,15 @@ public class WebApplicationTodoistService implements TodoistService {
 	// 3534a321bc474ce18ee8134aae2720f1
 
 	public WebApplicationTodoistService() {
+		String ACCESS_TOKEN = System.getenv("TODOIST_ACCESS_TOKEN");
 		init(ACCESS_TOKEN);
 	}
 
 	@Override
 	public void init(String accessToken) {
-		this.client_id = cid;
-		this.client_secret = csecret;
-		this.nonce = new Random(5).nextInt();
+//		this.client_id = cid;
+//		this.client_secret = csecret;
+//		this.nonce = new Random(5).nextInt();
 		this.accessToken = accessToken;
 		UriComponentsBuilder uriBuilder = UriComponentsBuilder.newInstance().scheme("https").host("todoist.com")
 				.path("/api/v8/sync");

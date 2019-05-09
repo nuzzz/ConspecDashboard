@@ -13,17 +13,17 @@ import com.amazonaws.regions.Regions;
 @Configuration
 public class AmazonS3Config 
 {
-    @Value("${aws.access.key.id}")
+	@Value("#{environment.AWS_ACCESS_KEY_ID}")
     private String awsKeyId;
 
-    @Value("${aws.access.key.secret}")
+	@Value("#{environment.AWS_SECRET_ACCESS_KEY}")
     private String awsKeySecret;
 
-    @Value("${aws.region}")
+	@Value("#{environment.AWS_REGION}")
     private String awsRegion;
 
-    @Value("${aws.s3.conspec.bucket}")
-    private String awsS3ConspecBucket;
+	@Value("#{environment.AWS_S3_BUCKET_NAME}")
+    private String awsBucket;
 
     @Bean(name = "awsKeyId")
     public String getAWSKeyId() {
@@ -46,8 +46,8 @@ public class AmazonS3Config
         return new AWSStaticCredentialsProvider(awsCredentials);
     }
 
-    @Bean(name = "awsS3ConspecBucket")
-    public String getAWSS3ConspecBucket() {
-        return awsS3ConspecBucket;
+    @Bean(name = "awsBucket")
+    public String getAwsBucket() {
+        return awsBucket;
     }
 }
