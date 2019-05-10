@@ -1,20 +1,33 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org"
 	th:replace="~{fragments/layout :: layout (~{::body},'upload')}">
+
 <body>
 	<div class="jumbotron text-left">
-		<h1 class="display-4">File upload</h1>
-		
-		<form action="/upload" method="post" enctype="multipart/form-data">
-		<input name="file" type="file" class="file"
-			data-browse-on-zone-click="true">
-    <br/>
-		<br/>
-		<button action="submit">Submit</button>
-		</form>
-		<p th:if=${message} th:text="${message}"></p>
+
+		<div class="container">
+			<h1>File upload</h1>
+					
+			<div class="input-group">
+        <label class="input-group-btn">
+          <span class="btn btn-primary">
+            Browse&hellip; <input type="file" style="display: none;">
+          </span>
+        </label>
+        <input type="text" class="form-control" readonly>
+      </div>
+      
+			<div class="input-group submit">
+				<button class="btn btn-primary">Submit</button>
+			</div>
+
+			<div>
+  			<p th:if=${message} th:text="${message}"></p>
+			</div>
+		</div>
 	</div>
-	
-</body>
+	<th:block layout:fragment="script">
+            <script type="application/javascript" th:src="@{/js/test.js}"></script>
+  </th:block>
 </body>
 </html>

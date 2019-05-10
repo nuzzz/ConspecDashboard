@@ -20,26 +20,39 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
+import org.apache.catalina.connector.Connector;
+import org.apache.coyote.http11.AbstractHttp11Protocol;
+import org.apache.tomcat.util.http.fileupload.FileUploadBase;
+import org.apache.tomcat.util.http.fileupload.FileUploadBase.SizeLimitExceededException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartResolver;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -89,13 +102,13 @@ public class WebApplicationController {
 
 	@Autowired
 	private RestTemplate restTemplate;
-	
+
 	@Autowired
-	public WebApplicationController(WebApplicationTodoistService todoistService, AmazonS3ClientService amazonS3ClientService) {
+	public WebApplicationController(WebApplicationTodoistService todoistService,
+			AmazonS3ClientService amazonS3ClientService) {
 		this.todoistService = todoistService;
 		this.amazonS3ClientService = amazonS3ClientService;
 	}
-
 
 	private static final String SCOPE = "data:read_write";// data:read //data:read_write
 	private static final String RESPONSE_TYPE = "code";
@@ -103,22 +116,31 @@ public class WebApplicationController {
 	private static final String SCHEDULED_TASK_FILENAME = "scheduledTaskList.json";
 	private static final String SCHEDULED_TASK_S3_LOCATION = "ScheduledTasks/scheduledTaskList.json";
 
+	@Bean
+    public TomcatServletWebServerFactory containerFactory() {
+        return new TomcatServletWebServerFactory() {
+            protected void customizeConnector(Connector connector) {
+                int maxSize = -1;
+                super.customizeConnector(connector);
+                connector.setMaxPostSize(maxSize);
+                connector.setMaxSavePostSize(maxSize);
+                if (connector.getProtocolHandler() instanceof AbstractHttp11Protocol) {
 
+                    ((AbstractHttp11Protocol <?>) connector.getProtocolHandler()).setMaxSwallowSize(maxSize);
+                    logger.info("Set MaxSwallowSize "+ maxSize);
+                }
+            }
+        };
 
-	@RequestMapping("/upload")
-	public String upload() {
-		return "upload";
-	}
-
-
-
+    }
+	
 	@RequestMapping("/loadproject")
 	public String loadproject(Map<String, Object> model) {
 		// TODO: not implemented
 		// uploadToS3();
-		loadProjectData();
+		long projectID = loadProjectData();
 		// runScheduler
-
+		model.put("message", "The project id is " + String.valueOf(projectID));
 		return "loadproject";
 	}
 
@@ -139,23 +161,28 @@ public class WebApplicationController {
 		return "index";
 	}
 
+	
+	@RequestMapping("/upload")
+	public String upload() {
+		return "upload";
+	}
+	
 	@RequestMapping(value = "/upload", method = RequestMethod.POST)
 	public Map<String, String> uploadFile(@RequestPart(value = "file") MultipartFile file) {
 		Map<String, String> response = new HashMap<>();
 		try {
 			this.amazonS3ClientService.uploadFileToS3Bucket(file, true);
-			response.put("message",
-					"file [" + file.getOriginalFilename() + "] uploading request submitted successfully.");
+			response.put("message", "File [" + file.getOriginalFilename() + "] uploaded successfully.");
 		} catch (FileFormatException e) {
-			response.put("message", "Error file needs to be Microsoft Project type (.mpp)");
+			response.put("message", "Error file needs to be Microsoft Project type. (.mpp)");
 		}
-
 		return response;
 	}
+	
 
 	// This function should run on button click of projectname depending on file
 	// uploaded to file directory in s3.
-	public void loadProjectData() {
+	public long loadProjectData() {
 		Map<String, Long> tempToRealID = new HashMap<>();
 
 		// Login //TODO: Unimplemented login
@@ -209,6 +236,8 @@ public class WebApplicationController {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
+		return projectID;
 	}
 
 	// 1. Load taskList from s3

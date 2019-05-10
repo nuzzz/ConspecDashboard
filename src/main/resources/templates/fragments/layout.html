@@ -8,7 +8,9 @@
 
 <body>
 	<nav class="navbar navbar-expand-sm navbar-dark bg-dark">
-		<a class="navbar-brand" href="/">Home</a>
+		<a class="navbar-brand" href="/">
+		  <img width="75px" height="52px" src="/conspec-white.png"></img>
+		</a>
 
 		<button class="navbar-toggler" type="button" data-toggle="collapse"
 			data-target="#navbarSupportedContent"
@@ -44,8 +46,9 @@
 	</nav>
 	<div th:replace="${template}" />
 
-  <script src="/webjars/jquery/jquery.min.js"></script>
-  <script src="/webjars/jquery-ui/jquery-ui.js"></script>
-  <script src="/webjars/popper.js/popper.min.js"></script>
-  <script src="/webjars/bootstrap/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="/webjars/jquery/jquery.min.js"></script>
+  <script type="text/javascript" src="/webjars/jquery-ui/jquery-ui.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/popper.js@1.12.9/dist/umd/popper-utils.min.js"></script>
+  <script type="text/javascript" src="/webjars/bootstrap/js/bootstrap.min.js"></script>
+  <th:block layout:fragment="scripts"></th:block>
 </body>
