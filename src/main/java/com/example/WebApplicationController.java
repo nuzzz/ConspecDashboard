@@ -20,14 +20,10 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.logging.Logger;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.sql.DataSource;
 
 import org.apache.catalina.connector.Connector;
 import org.apache.coyote.http11.AbstractHttp11Protocol;
-import org.apache.tomcat.util.http.fileupload.FileUploadBase;
-import org.apache.tomcat.util.http.fileupload.FileUploadBase.SizeLimitExceededException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -35,31 +31,24 @@ import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactor
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
-import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartResolver;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.extensions.FileFormatException;
 import com.example.helper.AmazonS3ClientService;
 import com.example.model.Command;
-import com.example.model.Dog;
 import com.example.model.TodoistTask;
 import com.example.model.TodoistTempTask;
 import com.fasterxml.jackson.core.JsonParseException;
@@ -215,7 +204,7 @@ public class WebApplicationController {
 			todoistService.clearCommands();
 		}
 
-		List<TodoistTask> createdTasks = createTodoistTaskList(taskListTillCurrentDate, tempToRealID);
+		//List<TodoistTask> createdTasks = createTodoistTaskList(taskListTillCurrentDate, tempToRealID);
 
 		// Store scheduled into memory ensure it contains date => temp task mapping
 		List<TodoistTempTask> scheduledTaskList = getScheduledTasks(taskList, tempToRealID);
@@ -407,6 +396,7 @@ public class WebApplicationController {
 		return builder.build();
 	}
 
+	@SuppressWarnings("unused")
 	@RequestMapping(value = "/todoist/revoke", method = RequestMethod.POST)
 	private ModelAndView revokeToken() {
 
@@ -423,10 +413,9 @@ public class WebApplicationController {
 	}
 
 	public ProjectFile initProjectStuff() {
-		String PROJECT_FILENAME = "Project Schedule 03-03-19.mpp";
+		String PROJECT_FILENAME = "bennington outstanding trial EDITED.mpp";
 
-		String message = "";
-		ArrayList<ICalendar> calendars;
+//		ArrayList<ICalendar> calendars;
 		ConspecProjectManager conspecPM = null;
 		ProjectFile project = null;
 
@@ -435,16 +424,14 @@ public class WebApplicationController {
 		try {
 			projProperties.load(new FileInputStream(configPath));
 		} catch (IOException ioe) {
-			message = "Unable to read file: " + ioe;
-			System.out.println("Main|Unable to read file: " + ioe);
+			LOGGER.severe("Unable to read file: " + ioe);
 		}
 
 		try {
 			conspecPM = new ConspecProjectManager(PROJECT_FILENAME);
 			project = conspecPM.getProjectFile();
 		} catch (MPXJException e) {
-			message = "Main|Failed to read project: " + e;
-			System.out.println("Main|Failed to read project: " + e);
+			LOGGER.severe("Failed to read project: " + e);
 		}
 		return project;
 	}
@@ -493,7 +480,6 @@ public class WebApplicationController {
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		// convert json string to object
-		Dog doggo;
 		try {
 			JsonNode rootNode = objectMapper.readTree(jsonData);
 			JsonNode urlNode = rootNode.get(0).get("url");

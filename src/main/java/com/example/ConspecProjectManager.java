@@ -2,15 +2,13 @@ package com.example;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
 
 import com.example.helper.ColourGiver;
 import com.example.helper.WeeklySummaryHelper;
@@ -19,8 +17,6 @@ import biweekly.ICalendar;
 import biweekly.component.VEvent;
 import biweekly.property.Summary;
 import biweekly.util.Duration;
-
-
 import net.sf.mpxj.MPXJException;
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Task;
@@ -28,11 +24,7 @@ import net.sf.mpxj.reader.ProjectReader;
 import net.sf.mpxj.reader.UniversalProjectReader;
 
 public class ConspecProjectManager {
-	private String projectFilename;
 	private ProjectFile projectData;
-	private String[] colourArray =  {"Purple category", "Blue category", 
-								"Green category", "Yellow category", 
-								"Orange category", "Red category"};
 	
 	ConspecProjectManager(String projectFilename) throws MPXJException{
 		ProjectReader reader = new UniversalProjectReader();
@@ -161,10 +153,10 @@ public class ConspecProjectManager {
 		
 				
 		//Map<Integer,String> mondayEvents = new HashMap<Integer,String>();
-		Iterator it = mondayEvents.entrySet().iterator();
+		Iterator<Entry<Integer, String>> it = mondayEvents.entrySet().iterator();
 		WeeklySummaryHelper wsh2 = new WeeklySummaryHelper();
 	    while (it.hasNext()) {
-	        Map.Entry pair = (Map.Entry)it.next();
+			Map.Entry<Integer,String> pair = (Map.Entry<Integer,String>)it.next();
 	        Integer mondayDateInt = (Integer) pair.getKey();
 	        String mondaySummaryDescription = (String) pair.getValue();
 	        

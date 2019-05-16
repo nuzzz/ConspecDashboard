@@ -39,6 +39,16 @@ public class TodoistProject extends TodoistObject{
 	public void setIndent(int indent) {
 		this.indent = indent;
 	}
-	
-	
+	public long getId() {
+		return id;
+	}
+	public void setId(long id) {
+		this.id = id;
+	}
+	public boolean isDeleted() {
+		return deleted;
+	}
+	public void setDeleted(boolean deleted) {
+		this.deleted = deleted;
+	}
 }

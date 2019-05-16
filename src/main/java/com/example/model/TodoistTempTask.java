@@ -1,7 +1,6 @@
 package com.example.model;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Set;
 
 public class TodoistTempTask {
@@ -137,5 +136,53 @@ public class TodoistTempTask {
 
 	public void setLabels(Set<Integer> labels) {
 		this.labels = labels;
+	}
+
+	public int getDay_order() {
+		return day_order;
+	}
+
+	public void setDay_order(int day_order) {
+		this.day_order = day_order;
+	}
+
+	public int getCollapsed() {
+		return collapsed;
+	}
+
+	public void setCollapsed(int collapsed) {
+		this.collapsed = collapsed;
+	}
+
+	public int getAssigned_by_uid() {
+		return assigned_by_uid;
+	}
+
+	public void setAssigned_by_uid(int assigned_by_uid) {
+		this.assigned_by_uid = assigned_by_uid;
+	}
+
+	public int getResponsible_uid() {
+		return responsible_uid;
+	}
+
+	public void setResponsible_uid(int responsible_uid) {
+		this.responsible_uid = responsible_uid;
+	}
+
+	public boolean isAuto_reminder() {
+		return auto_reminder;
+	}
+
+	public void setAuto_reminder(boolean auto_reminder) {
+		this.auto_reminder = auto_reminder;
+	}
+
+	public boolean isAuto_parse_labels() {
+		return auto_parse_labels;
+	}
+
+	public void setAuto_parse_labels(boolean auto_parse_labels) {
+		this.auto_parse_labels = auto_parse_labels;
 	}
 }

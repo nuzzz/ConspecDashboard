@@ -52,7 +52,7 @@ public class Command {
 			arguments += key + " " + args.get(key); 
 		}
 		
-		return "type: " + type + " uuid: " + uuid + " temp_id: " + temp_id + " arguments: "+args; 
+		return "type: " + type + " uuid: " + uuid + " temp_id: " + temp_id + " arguments: "+arguments; 
 	}
 	
 }

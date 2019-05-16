@@ -30,7 +30,7 @@ public class ColourGiverTest {
 	public void initWithEmptyArrayThrowsException(){
 		Assertions.assertThrows(Exception.class, ()->{
 			String[] customArray = {};
-			ColourGiver colourGiver = new ColourGiver(customArray);
+			new ColourGiver(customArray);
 		});
 	}
 	
@@ -50,7 +50,7 @@ public class ColourGiverTest {
 	public void initColourMap(){
 		ColourGiver colourGiver = new ColourGiver();
 		HashMap<String, String> expectedOutput = new HashMap<String,String>();
-		
+		Assertions.assertTrue(colourGiver.getColourMap().equals(expectedOutput));
 	}
 	
 	@Test
@@ -66,7 +66,6 @@ public class ColourGiverTest {
 		ColourGiver colourGiver = new ColourGiver();
 		String expectedCategory = "Blue category";
 		
-		String colour1 = colourGiver.getColourCategory("abcd");
 		String colour2 = colourGiver.getColourCategory("bcde");	
 		Assertions.assertEquals(expectedCategory, colour2);
 	}

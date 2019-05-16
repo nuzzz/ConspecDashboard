@@ -1,16 +1,13 @@
 package com.example;
 
-import java.io.IOException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,11 +22,9 @@ import com.example.model.Command;
 import com.example.model.TodoistDue;
 import com.example.model.TodoistTask;
 import com.example.model.TodoistTempTask;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import net.sf.mpxj.ProjectFile;
 import net.sf.mpxj.Task;
-import okhttp3.Response;
 
 @Service
 public class WebApplicationTodoistService implements TodoistService {
@@ -37,9 +32,9 @@ public class WebApplicationTodoistService implements TodoistService {
 	private static final Logger logger = LoggerFactory.getLogger(WebApplicationTodoistService.class);
 
 	// set on init
-	private String client_id;
-	private String client_secret;
-	private int nonce;
+//	private String client_id;
+//	private String client_secret;
+//	private int nonce;
 	private String syncURL;
 
 	private List<Command> commands = new ArrayList<Command>();
@@ -63,6 +58,7 @@ public class WebApplicationTodoistService implements TodoistService {
 	public WebApplicationTodoistService() {
 		String ACCESS_TOKEN = System.getenv("TODOIST_ACCESS_TOKEN");
 		init(ACCESS_TOKEN);
+		logger.debug("initialised access token");
 	}
 
 	@Override

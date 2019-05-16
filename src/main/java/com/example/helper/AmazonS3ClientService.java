@@ -2,12 +2,10 @@ package com.example.helper;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.extensions.FileFormatException;
-import com.example.model.TodoistTempTask;
 
 public interface AmazonS3ClientService {
 

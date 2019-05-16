@@ -4,30 +4,36 @@
 
 <body>
 	<div class="jumbotron text-left">
-
-		<div class="container">
+		<div class="container" id="container">
 			<h1>File upload</h1>
-					
-			<div class="input-group">
-        <label class="input-group-btn">
-          <span class="btn btn-primary">
-            Browse&hellip; <input type="file" style="display: none;">
-          </span>
-        </label>
-        <input type="text" class="form-control" readonly>
-      </div>
-      
-			<div class="input-group submit">
-				<button class="btn btn-primary">Submit</button>
-			</div>
-
-			<div>
-  			<p th:if=${message} th:text="${message}"></p>
+      <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" value="file">
+        <br/>
+        <br/>
+        <button type="submit" value="submit">Submit</button>
+      </form>
+			<div id="message">
+				<p th:if=${message} th:text="${message}"></p>
 			</div>
 		</div>
 	</div>
-	<th:block layout:fragment="script">
-            <script type="application/javascript" th:src="@{/js/test.js}"></script>
-  </th:block>
+	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+	<script>
+	 var app = new Vue({
+		 el: '#container',
+		 data: {posts: []},
+		 mounted(){
+			 this.fetchPosts();
+		 },
+		 methods: {
+			 fetchPosts(){
+				 axios.get("/posts").then(function(response){
+					 this.posts = response.data;
+				 }.bind(this));
+			 }
+		 }
+	 });
+	</script>
 </body>
 </html>
