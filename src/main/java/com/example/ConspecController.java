@@ -29,8 +29,10 @@ import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactor
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -90,11 +92,11 @@ public class ConspecController {
 	private static final String SCOPE = "data:read_write";
 	private static final String RESPONSE_TYPE = "code";
 	private static final int MAX_COMMANDS = 25;
-	private static final String SCHEDULED_TASK_FILENAME = "scheduledTaskList123.json";
-	private static final String SCHEDULED_TASK_S3_LOCATION = "ScheduledTasks/scheduledTaskList123.json";
+	//private static final String SCHEDULED_TASK_FILENAME = "scheduledTaskList123.json";
+	//private static final String SCHEDULED_TASK_S3_LOCATION = "ScheduledTasks/scheduledTaskList123.json";
 	private static final String SCHEDULED_TASK_S3_DIRECTORY = "ScheduledTasks/";
-	private static final String SCHEDULED_TASK_FILE_PREFIX = "scheduledTaskList";
-	private static final String JSON_FILETYPE = ".json";
+	private static final String SCHEDULED_TASK_FILENAME = "scheduledTaskList";
+	private static final String JSON_FILE_EXT = ".json";
 
 	// Configure tomcat to set maxsize of upload files before processing
 	@Bean
@@ -120,44 +122,49 @@ public class ConspecController {
 		return builder.build();
 	}
 
-	@RequestMapping("/projects")
-	public String projects(Map<String, Object> model) {
-		List<String> projects = new ArrayList<>();
-		
-		projects = s3ClientService.listAllProjects();
-		model.put("projects", projects);
-		
-		return "projects";
-	}
 
 	@RequestMapping("/")
 	public String index(Map<String, Object> model) {
 		return "index";
 	}
-	
 
-	@RequestMapping("/loadproject")
-	public String loadproject(Map<String, Object> model) {
-		long projectID = -1L;//loadProjectData();
-		model.put("message", "The project id is " + String.valueOf(projectID));
-		return "loadproject";
+	@RequestMapping("/projects")
+	public String projects(Map<String, Object> model) {
+		List<String> projects = new ArrayList<>();
+		
+		projects = s3ClientService.fileListFromS3Directory(s3ClientService.getProjectDirectory());
+		model.put("projects", projects);
+		
+		return "projects";
 	}
-	
+
 	@RequestMapping(value="/loadthisproject", method = RequestMethod.POST)
 	public String loadThisProject(Map<String, Object> model, @RequestPart(value="project") String project){
-		Map<String, String> response = new HashMap<>();
-		System.out.println(project);
-		String file_name = project.split("/")[1];
+		//project = "Projects/%file_name%"
+		//extract filename
+		String file_name = getFilenameFromS3Path(project);
 		File f = this.s3ClientService.getFileFromS3(project, file_name);
 		long projectID = loadProjectData(file_name);
+		
+		
 		model.put("message", "The project id is " + String.valueOf(projectID));
+		
+		f.delete();
+		
 		return "loadthisproject";
 	}
 
 	@RequestMapping("/runschedule")
 	public String runSchedule(Map<String, Object> model) {
-		ResponseEntity<String> result = runProjectScheduledTaskManager();
-		model.put("message", result.getBody());
+		List<ResponseEntity<String>> allResults = runProjectScheduledTaskManager();
+		for(ResponseEntity<String> result : allResults) {
+			if(model.get("message")!=null) {
+				model.put("message", model.get("message") + "\n" +result.getBody());
+			}else {
+				model.put("message", result.getBody());
+			}
+		}
+		
 		return "runschedule";
 	}
 
@@ -192,9 +199,7 @@ public class ConspecController {
 
 	@RequestMapping(value = "/callback", method = RequestMethod.GET)
 	public String callbackTodoist(Map<String, Object> model, @RequestParam(value = "code") String code) {
-		System.out.println(code);
 		model.put("message", code);
-
 		return "callback";
 	}
 
@@ -253,7 +258,7 @@ public class ConspecController {
 		try {
 			projectData = reader.read(projectFilename);
 		} catch (MPXJException e) {
-			System.out.println("Failed to read project file: " + e);
+			LOGGER.severe("Failed to read project file: " + e);
 		}
 		return projectData;
 	}
@@ -280,8 +285,6 @@ public class ConspecController {
 		// save projectid to memory
 		long projectID = createProject(projectData.getTasks().get(1).getName(), dateNow);
 
-		todoistService.clearCommands();
-
 		List<TodoistTempTask> taskList = todoistService.createTempTaskList(projectData, projectID);
 		List<TodoistTempTask> taskListTillCurrentDate = todoistService.tillDateFilter(taskList, LocalDate.now());
 
@@ -297,7 +300,6 @@ public class ConspecController {
 			ResponseEntity<String> result = createTempTasks(currentTaskList);
 			Map<String, Long> splitTaskIdMap = saveTaskIdFrom(result.getBody());
 			tempToRealID.putAll(splitTaskIdMap);
-			todoistService.clearCommands();
 		}
 
 		// List<TodoistTask> createdTasks =
@@ -313,13 +315,15 @@ public class ConspecController {
 			String jsonStr = mapper.writeValueAsString(scheduledTaskList);
 
 			// Create file locally
-			String fileName = SCHEDULED_TASK_FILENAME + projectID; 
-			File newFile = new File(fileName);
+			String scheduledFilename = SCHEDULED_TASK_FILENAME+projectID+JSON_FILE_EXT;
+			File newFile = new File(scheduledFilename);
 			Files.write(jsonStr.getBytes(), newFile);
 
 			// Place file into s3
-			s3ClientService.putFile(SCHEDULED_TASK_S3_LOCATION, newFile);
-
+			// scheduled_task_dir + scheduled_task_filename + project_id + json_extension
+			String scheduledFileLocation = SCHEDULED_TASK_S3_DIRECTORY + scheduledFilename;
+			s3ClientService.putFile(scheduledFileLocation, newFile);
+		
 			// Delete local file
 			newFile.delete();
 		} catch (JsonProcessingException jsonProcessingException) {
@@ -385,9 +389,6 @@ public class ConspecController {
 		return tempToRealID;
 	}
 
-	public void showProjects() {
-		this.s3ClientService.listAllProjects();
-	}
 
 	// This returns a long project id only if the command was successful
 	public long createProject(String projectName, LocalDate dateNow) {
@@ -455,19 +456,37 @@ public class ConspecController {
 			result = restTemplate.postForEntity(todoistService.getSyncURL(), entity, String.class);
 		} catch (JsonProcessingException e) {
 			e.printStackTrace();
+		} finally {
+			todoistService.clearCommands();
 		}
 		return result;
 	}
 
 	/******************************************************************************************************
 	 * ScheduledTasks code begins here
+	 * @return 
 	 * 
-	 * @return
+	 * 
 	 ******************************************************************************************************/
 
-	public ResponseEntity<String> runProjectScheduledTaskManager() {
-		String jsonString = s3ClientService.getJsonStringFromS3(SCHEDULED_TASK_S3_LOCATION);
+	public List<ResponseEntity<String>> runProjectScheduledTaskManager() {
+		//Get all files from scheduledTasks directory
+		List<String> scheduledTasksFileList = s3ClientService.fileListFromS3Directory(SCHEDULED_TASK_S3_DIRECTORY);
+		
+		List<ResponseEntity<String>> allResults = new ArrayList<>();
+		
+		for(String fullFilePath : scheduledTasksFileList) {
+			ResponseEntity<String> result = runScheduledTasksFor(fullFilePath);
+			allResults.add(result);
+		}
+		return allResults;
+	}
+	
+	@Async
+	public ResponseEntity<String> runScheduledTasksFor(String s3FilePath){
 		ResponseEntity<String> result = null;
+		String file = getFilenameFromS3Path(s3FilePath);
+		String jsonString = s3ClientService.getJsonStringFromS3(SCHEDULED_TASK_S3_DIRECTORY + file);
 		if (!jsonString.equals("[]")) {
 			// Put tasks into taskList
 			List<TodoistTempTask> scheduledTaskList = new ArrayList<>();
@@ -491,30 +510,30 @@ public class ConspecController {
 			scheduledTaskList.removeAll(addTheseTasks);
 
 			// reupload to s3 removed task list back into scheduled
-			uploadTasklistToS3(scheduledTaskList);
+			uploadTasklistToS3(scheduledTaskList, s3FilePath);
 
 			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 			LOGGER.info("added " + taskCount + " tasks on " + currentDate.format(dtf));
 			todoistService.addTasksToTodoist(addTheseTasks);
 			result = sendTodoistCommands();
+			
 		} else {
 			LOGGER.info("No tasks added because jsonString is empty");
 		}
-
 		return result;
 	}
 
-	public void uploadTasklistToS3(List<TodoistTempTask> taskList) {
+	public void uploadTasklistToS3(List<TodoistTempTask> taskList, String s3FilePath) {
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			mapper.registerModule(new JavaTimeModule());
 			mapper.writerWithDefaultPrettyPrinter();
 			String jsonStr = mapper.writeValueAsString(taskList);
-			File newFile = new File(SCHEDULED_TASK_FILENAME);
+			File newFile = new File(getFilenameFromS3Path(s3FilePath));
 			Files.write(jsonStr.getBytes(), newFile);
-			s3ClientService.putFile(SCHEDULED_TASK_S3_LOCATION, newFile);
+			s3ClientService.putFile(s3FilePath, newFile);
 			newFile.delete();
-		} catch (JsonProcessingException e) {
+		} catch (JsonProcessingException e) {	
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -523,13 +542,16 @@ public class ConspecController {
 		}
 	} // uploadToS3
 
+	private String getFilenameFromS3Path(String s3FilePath) {
+		return s3FilePath.substring(s3FilePath.lastIndexOf("/") +1);
+	}
+	
 	// Credits: https://stackoverflow.com/a/46233446
 	private <T> List<T> jsonArrayToObjectList(String json, Class<T> tClass) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new JavaTimeModule());
 		CollectionType listType = mapper.getTypeFactory().constructCollectionType(ArrayList.class, tClass);
 		List<T> ts = mapper.readValue(json, listType);
-		LOGGER.fine("class name: " + ts.get(0).getClass().getName());
 		return ts;
 	} // jsonArrayToObjectList
 

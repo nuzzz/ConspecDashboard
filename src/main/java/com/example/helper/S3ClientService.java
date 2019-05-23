@@ -17,8 +17,6 @@ public interface S3ClientService {
 	
 	void listAllFiles();
 
-	List<String> listAllProjects();
-
 	void saveJsonTo(String location, String content, boolean enablePublicReadAccess);
 
 	void putFile(String location, File newFile);
@@ -28,4 +26,8 @@ public interface S3ClientService {
 	String getJsonStringFromS3(String taskListLocation);
 
 	File getFileFromS3(String s3_file_location, String file_name);
+
+	List<String> fileListFromS3Directory(String directory);
+
+	String getProjectDirectory();
 }

@@ -44,7 +44,8 @@ import com.google.common.io.Files;
 public class ConspecS3ClientService implements S3ClientService {
 	private AmazonS3 amazonS3;
 	private static final Logger logger = LoggerFactory.getLogger(ConspecS3ClientService.class);
-	
+	private static final String PROJECTS_DIR = "Projects/";
+	private static final String SCHEDULED_TASKS_DIR = "ScheduledTasks/";
 	private String awsBucket;
 	@Autowired
 	public ConspecS3ClientService(Region awsRegion, String awsBucket, AWSCredentialsProvider awsCredentialsProvider) {
@@ -67,16 +68,18 @@ public class ConspecS3ClientService implements S3ClientService {
 		this.amazonS3.putObject(putObjectRequest);
 	}
 
+	@Override
 	@Async
-	public List<String> listAllProjects() {
-		List<String> listOfProjects = new ArrayList<>();
+	public List<String> fileListFromS3Directory(String directory) {
+		List<String> listOfFiles = new ArrayList<>();
 		ObjectListing objectListing = amazonS3.listObjects(awsBucket);
 		for (S3ObjectSummary os : objectListing.getObjectSummaries()) {
-			if(os.getKey().startsWith("Projects/"))
-				listOfProjects.add(os.getKey());
+			if(os.getKey().startsWith(directory))
+				listOfFiles.add(os.getKey());
 		}
-		return listOfProjects;
+		return listOfFiles;
 	}
+
 
 	public List<String> getObjectslistFromFolder(String bucketName, String folderKey) {
 
@@ -108,8 +111,8 @@ public class ConspecS3ClientService implements S3ClientService {
 		} else {
 			try {
 				// creating the file in the server (temporarily)
-				String folder = "Projects/";
-				String finalFileName = folder + fileName;
+				
+				String finalFileName = PROJECTS_DIR + fileName;
 				File file = new File(fileName);
 				FileOutputStream fos = new FileOutputStream(file);
 				fos.write(multipartFile.getBytes());
@@ -165,9 +168,6 @@ public class ConspecS3ClientService implements S3ClientService {
 			logger.error("Sdk Client Exception occured: " + error);
 		}
 		
-		System.out.println(objectMetaData.getContentType());
-		System.out.println(objectMetaData.getContentLength());
-		
 		return outputFile;
 	}
 
@@ -210,4 +210,13 @@ public class ConspecS3ClientService implements S3ClientService {
 		}
 		return jsonString;
 	} // getJsonDataFromS3
+	
+	public String getProjectDirectory() {
+		return this.PROJECTS_DIR;
+	}
+	
+	public String getScheduledTasksDirectory() {
+		return this.SCHEDULED_TASKS_DIR;
+	}
+
 }
