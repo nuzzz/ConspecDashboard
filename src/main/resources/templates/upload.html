@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+	th:replace="~{fragments/layout :: layout (~{::body},'upload')}">
+
+<body>
+	<div class="jumbotron text-left">
+		<div class="container" id="container">
+			<h1>File upload</h1>
+      <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <br/>
+        <br/>
+        <button type="submit" value="submit">Submit</button>
+      </form>
+			<div id="message">
+				<p th:if=${message} th:text="${message}"></p>
+			</div>
+		</div>
+	</div> 
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+
+<html xmlns:th="http://www.thymeleaf.org" th:replace="~{fragments/layout :: layout (~{::body},'projects')}">
+  <body>
+  <div class="jumbotron text-left">
+    <h1 class="h1">Choose a project to load </h1>
+	  <div class="btn-toolbar">
+      <form action="/loadthisproject" method="post" enctype="multipart/form-data">
+	     <button type="submit" th:each="project: ${projects}" class="btn btn-primary btn-sml m-1" th:text=${project} name="project" th:value="${project}"></button>
+	     
+	    </form>  
+	  </div>
+  </div>
+  </body>
+</html>
+
