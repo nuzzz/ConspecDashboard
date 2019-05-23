@@ -19,31 +19,35 @@ import org.springframework.util.StreamUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.amazonaws.AmazonServiceException;
+import com.amazonaws.SdkClientException;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.regions.Region;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.DeleteObjectRequest;
+import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ListObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectListing;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
 import com.amazonaws.services.s3.model.S3ObjectInputStream;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
 import com.example.extensions.FileFormatException;
-import com.example.helper.AmazonS3ClientService;
+import com.example.helper.S3ClientService;
+import com.example.model.TodoistProject;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Files;
 
 @Component
-public class WebApplicationAmazonS3ClientService implements AmazonS3ClientService {
+public class ConspecS3ClientService implements S3ClientService {
 	private AmazonS3 amazonS3;
-	private static final Logger logger = LoggerFactory.getLogger(WebApplicationAmazonS3ClientService.class);
+	private static final Logger logger = LoggerFactory.getLogger(ConspecS3ClientService.class);
 	
 	private String awsBucket;
 	@Autowired
-	public WebApplicationAmazonS3ClientService(Region awsRegion, String awsBucket, AWSCredentialsProvider awsCredentialsProvider) {
+	public ConspecS3ClientService(Region awsRegion, String awsBucket, AWSCredentialsProvider awsCredentialsProvider) {
 		this.amazonS3 = AmazonS3ClientBuilder.standard()
 				.withCredentials(awsCredentialsProvider)
 				.withRegion(awsRegion.getName())
@@ -64,11 +68,14 @@ public class WebApplicationAmazonS3ClientService implements AmazonS3ClientServic
 	}
 
 	@Async
-	public void listAllProjects() {
+	public List<String> listAllProjects() {
+		List<String> listOfProjects = new ArrayList<>();
 		ObjectListing objectListing = amazonS3.listObjects(awsBucket);
 		for (S3ObjectSummary os : objectListing.getObjectSummaries()) {
-			System.out.println(os.getKey());
+			if(os.getKey().startsWith("Projects/"))
+				listOfProjects.add(os.getKey());
 		}
+		return listOfProjects;
 	}
 
 	public List<String> getObjectslistFromFolder(String bucketName, String folderKey) {
@@ -141,6 +148,27 @@ public class WebApplicationAmazonS3ClientService implements AmazonS3ClientServic
 	@Override
 	public void putFile(String location, File file) {
 		this.amazonS3.putObject(this.awsBucket, location, file);
+	}
+	
+
+	@Async
+	@Override
+	public File getFileFromS3(String s3_file_location, String file_name) {
+		
+		File outputFile = new File(file_name);
+		
+		GetObjectRequest getObjectRequest = new GetObjectRequest(this.awsBucket, s3_file_location);
+		ObjectMetadata objectMetaData = null;
+		try{ 
+			objectMetaData = this.amazonS3.getObject(getObjectRequest, outputFile);
+		}catch(SdkClientException error){
+			logger.error("Sdk Client Exception occured: " + error);
+		}
+		
+		System.out.println(objectMetaData.getContentType());
+		System.out.println(objectMetaData.getContentLength());
+		
+		return outputFile;
 	}
 
 	@Override

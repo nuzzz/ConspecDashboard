@@ -11,7 +11,7 @@ import com.amazonaws.regions.Region;
 import com.amazonaws.regions.Regions;
 
 @Configuration
-public class AmazonS3Config 
+public class S3ClientConfig 
 {
 	@Value("#{environment.AWS_ACCESS_KEY_ID}")
     private String awsKeyId;

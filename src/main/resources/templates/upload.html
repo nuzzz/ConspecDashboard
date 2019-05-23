@@ -7,7 +7,7 @@
 		<div class="container" id="container">
 			<h1>File upload</h1>
       <form action="/upload" method="post" enctype="multipart/form-data">
-        <input type="file" name="file" value="file">
+        <input type="file" name="file">
         <br/>
         <br/>
         <button type="submit" value="submit">Submit</button>
@@ -16,24 +16,6 @@
 				<p th:if=${message} th:text="${message}"></p>
 			</div>
 		</div>
-	</div>
-	<script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
-	<script>
-	 var app = new Vue({
-		 el: '#container',
-		 data: {posts: []},
-		 mounted(){
-			 this.fetchPosts();
-		 },
-		 methods: {
-			 fetchPosts(){
-				 axios.get("/posts").then(function(response){
-					 this.posts = response.data;
-				 }.bind(this));
-			 }
-		 }
-	 });
-	</script>
+	</div> 
 </body>
 </html>

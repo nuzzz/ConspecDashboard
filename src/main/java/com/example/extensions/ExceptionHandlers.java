@@ -1,4 +1,4 @@
-package com.example.helper;
+package com.example.extensions;
 
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,7 +18,7 @@ public class ExceptionHandlers extends ResponseEntityExceptionHandler{
 //    }
 	
     @ExceptionHandler(MultipartException.class)
-    public String handleError1(MultipartException e, RedirectAttributes redirectAttributes) {
+    public String handleLargeFileError(MultipartException e, RedirectAttributes redirectAttributes) {
 
         redirectAttributes.addFlashAttribute("message", "Error: Uploaded file size exceeds limit (5MB)");
         return "redirect:/upload";

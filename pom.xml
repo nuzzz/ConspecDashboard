@@ -4,7 +4,7 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.example</groupId>
-	<artifactId>java-getting-started</artifactId>
+	<artifactId>conspec-app</artifactId>
 	<version>1.0</version>
 
 	<parent>
@@ -13,7 +13,7 @@
 		<version>2.1.2.RELEASE</version>
 		<relativePath />
 	</parent>
-	<name>java-getting-started</name>
+	<name>conspec-app</name>
 
 	<properties>
 		<java.version>1.8</java.version>
@@ -25,9 +25,7 @@
 		<webjars-jquery.version>3.3.1-1</webjars-jquery.version>
 		<junit.jupiter.version>5.4.1</junit.jupiter.version>
 		<jackson.version>2.9.8</jackson.version>
-		<spring-security.version>5.0.6.RELEASE</spring-security.version>
 		<amazonaws.version>1.11.547</amazonaws.version>
-		<okhttp.version>3.14.1</okhttp.version>
 		<google-guava.version>27.1-jre</google-guava.version>
 	</properties>
 
@@ -43,16 +41,6 @@
 			<groupId>com.amazonaws</groupId>
 			<artifactId>aws-java-sdk-core</artifactId>
 			<version>${amazonaws.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.squareup.okhttp3</groupId>
-			<artifactId>okhttp</artifactId>
-			<version>${okhttp.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.microsoft.graph</groupId>
-			<artifactId>microsoft-graph</artifactId>
-			<version>1.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.junit.platform</groupId>
@@ -72,19 +60,9 @@
 			<version>7.7.1</version>
 		</dependency>
 		<dependency>
-			<groupId>net.sf.biweekly</groupId>
-			<artifactId>biweekly</artifactId>
-			<version>0.6.3</version>
-		</dependency>
-		<dependency>
 			<groupId>com.google.guava</groupId>
 			<artifactId>guava</artifactId>
 			<version>${google-guava.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.jscience</groupId>
-			<artifactId>jscience</artifactId>
-			<version>4.3.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
