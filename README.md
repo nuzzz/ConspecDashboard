@@ -14,15 +14,16 @@ If clicked in this page, this automatically takes the data from the uploaded Mic
 
 The project is generally written in Java using a starter Spring Boot setup, it is hosted on Heroku using a free dyno.
 
-Technologies used.
+# Technologies
 * Heroku (web hosting)
 * Amazon S3 (for storage)
 * Travis CI
+* Java
 
-Java External Libraries used
+# Java External Libraries
 * web-jars
 * junit
 * MPXJ
 * guava
-* Spring boot with thymeleaf
+* Spring boot with Thymeleaf
 * maven
