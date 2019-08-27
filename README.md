@@ -1,16 +1,18 @@
 # conspec-app
 
-A prototype for load and scheduling of Microsoft project files.
+A prototype for loading and scheduling of Microsoft project files.
 
 The Conspec-App project is used to extract Microsoft project file data and through the use of Todoist API place that data into todoist.
 
-It uses the following website to upload the microsoft project file.
+Notifications are used to notify the project owner when things are due or overdue and it is up to the user to manage these.
+
+# Technical stuff
 
 ![Image of program flow](https://github.com/nuzzz/ConspecDashboard/blob/master/MPP%20to%20Todoist.JPG)
 
 Once the file is uploaded, the project file can be found in the Projects subheading of the website.
 
-If clicked in this page, this automatically takes the data from the uploaded Microsoft Project file and inserts the task data into Todoist application under my local todoist account.
+If clicked in this page, this automatically takes the data from the uploaded Microsoft Project file and inserts the task data into Todoist my local todoist account.
 
 The project is generally written in Java using a starter Spring Boot setup, it is hosted on Heroku using a free dyno.
 
