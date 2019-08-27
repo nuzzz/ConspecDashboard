@@ -27,3 +27,5 @@ The project is generally written in Java using a starter Spring Boot setup, it i
 * guava
 * Spring boot with Thymeleaf
 * maven
+
+> note there is no code for the Microsoft Flows used for this project as they are used in production
