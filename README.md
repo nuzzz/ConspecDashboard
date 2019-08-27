@@ -1,6 +1,6 @@
 # conspec-app
 
-Conspec app for load and scheduling of Microsoft project files
+A prototype for load and scheduling of Microsoft project files.
 
 The Conspec-App project is used to extract Microsoft project file data and through the use of Todoist API place that data into todoist.
 
@@ -19,6 +19,7 @@ The project is generally written in Java using a starter Spring Boot setup, it i
 * Amazon S3 (for storage)
 * Travis CI
 * Java
+* Bootstrap
 
 # Java External Libraries
 * web-jars
@@ -27,5 +28,13 @@ The project is generally written in Java using a starter Spring Boot setup, it i
 * guava
 * Spring boot with Thymeleaf
 * maven
+
+# Useful resources
+* Todoist developer page (i was using version 8) https://developer.todoist.com/sync/v8/
+* MPXJ http://www.mpxj.org/
+* Amazon S3 https://docs.aws.amazon.com/AmazonS3/latest/dev/Welcome.html
+* Thymeleaf https://www.thymeleaf.org/
+* Spring https://spring.io/
+* Bootstrap https://getbootstrap.com/docs/4.3/getting-started/introduction/
 
 > note there is no code for the Microsoft Flows used for this project as they are used in production
