@@ -8,6 +8,7 @@ Notifications are used to notify the project owner when things are due or overdu
 
 # Technical stuff
 
+![Image of program flow](https://github.com/nuzzz/ConspecDashboard/blob/master/MPP%20to%20Todoist.JPG)
 
 Once the file is uploaded, the project file can be found in the Projects subheading of the website.
 
